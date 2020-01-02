@@ -6,14 +6,13 @@ import subprocess
 from Pyro4 import *
 from Pyro4.core import *
 from Pyro4.naming import *
-        
+
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtNetwork import *
+
 if __name__ == '__main__':
-    os.system(f"python {os.path.dirname(os.path.realpath(__file__))}\\bidentServer.py")
-    # try:
-    #     s = Proxy("PYRO:Bident@localhost:4560")
-    #     s.launch()
-    # except ConnectionError:
-    #     os.system(f"python {os.path.dirname(os.path.realpath(__file__))}\\bidentCore.py")
-    #     time.sleep(1)
-    #     s = Proxy("PYRO:Bident@localhost:4560")
-    #     s.launch()
+    
+    socket = QLocalSocket()
+    socket.connectToServer("Bident Server", QIODevice.WriteOnly)

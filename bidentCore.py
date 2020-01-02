@@ -1,28 +1,57 @@
 import sys
 import os
 import multiprocessing
-from Pyro4.core import *
-from Pyro4.naming import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
+from PyQt5.QtNetwork import *
 
 
-class Init(object):
+class Launcher(QApplication):
     
-    def
-
-@expose
-class Service(object):
-
-    @oneway
-    def launch(self):
-        print("Launch")
+    def __init__(self, args):
+        super(Launcher, self).__init__(args)
+        
+        self.setApplicationName("DotaBident")
+        print(self.applicationDirPath())
+        
+        self.socket = QLocalSocket()
+        self.server = QLocalServer()
+        
+        
+        
+    def socketConnected(self):
+        pass
+    
+    def socketError(self):
+        pass
+    
+    def socketDisconnected(self):
+        pass
+    
+    def socketWritten(self, bytes):
+        pass
+    
+    def socketReading(self):
+        pass
+    
+    def newInstanceConnected(self):
+        pass
+    
+    # def singleInstanceChecked(self):
+    #     self.mainSocket.connectToServer("Bident", QIODevice.WriteOnly)
+    #     if self.mainSocket.connected():
+    #         pass
+    #     else:
+        
+    def launchApplication(self):
+        pass
+    
+        
 
 
 if __name__ == '__main__':
     
-    deamon = Daemon(port=4560)
-    uri = deamon.register(Service, "Bident", )
-    print(uri)
-    deamon.requestLoop()
+    app = Launcher(sys.argv)
+    app.exec_()
+    

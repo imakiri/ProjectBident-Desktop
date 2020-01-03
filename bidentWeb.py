@@ -9,8 +9,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtNetwork import *
 
-
-class LocalStorage(QStorageInfo):
+class Cookie(QNetworkCookie):
     
     def __init__(self, parent=None):
-        super(LocalStorage, self).__init__(parent)
+        super(Cookie, self).__init__(parent)
+        

@@ -9,25 +9,26 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtNetwork import *
 
+import bidentCore
 
-class Launcher(QApplication):
+class Launcher(QObject):
     
-    def __init__(self, args):
-        super(Launcher, self).__init__(args)
+    def __init__(self, argv):
+        super(Launcher, self).__init__()
+        self.arguments = argv
+
         
-        self.setApplicationName('DotaBident')
-        self.exePath = self.arguments()[0]
-        self.exeDir = os.path.dirname(self.exePath)
         self.isSecondInstance = False
         self.isSocketConnected = False
         self.socket = QLocalSocket()
         
         self.processArguments()
         self.singleInstanceChecked()
-        
+
         self.server = QLocalServer()
         self.server.newConnection.connect(self.newInstanceConnected)
         self.server.listen("Bident Server")
+
     
     def processArguments(self):
         self.argParser = argparse.ArgumentParser(description='Bident Parser')
@@ -68,12 +69,13 @@ class Launcher(QApplication):
         self.socket.readyRead.connect(self.socketReading)
     
     def launchApplication(self):
-        pass
+        self.launch = bidentCore.App(self.arguments)
+        
 
 
 if __name__ == '__main__':
-    app = Launcher(sys.argv)
-    if not app.isSecondInstance:
-        app.exec_()
+    launcher = Launcher(sys.argv)
+    if not launcher.isSecondInstance:
+        launcher.launchApplication()
     else:
         pass

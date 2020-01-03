@@ -12,7 +12,24 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtNetwork import *
 
-if __name__ == '__main__':
+
+class Launcher(QApplication):
     
-    socket = QLocalSocket()
-    socket.connectToServer("Bident Server", QIODevice.WriteOnly)
+    def __init__(self, args):
+        super(Launcher, self).__init__(args)
+
+        self.socket = QLocalSocket()
+        self.socket.connectToServer("Bident Server", QIODevice.ReadWrite)
+        self.socket.readyRead.connect(self.socketConnected)
+
+    def socketConnected(self):
+        response = self.socket.readAll().data().decode('utf-8')
+        if response == 'Connected':
+            print('Connected')
+        else:
+            raise ConnectionError
+
+if __name__ == '__main__':
+    app = Launcher([])
+    # socket.disconnectFromServer()
+    app.exec_()

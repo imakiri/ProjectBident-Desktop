@@ -2,8 +2,8 @@ import sys
 import os
 import time
 import multiprocessing
-import argparse
 import ast
+import urllib.parse
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -11,12 +11,14 @@ from PyQt5.QtNetwork import *
 
 import bidentCore
 
+
 class Launcher(QObject):
     
     def __init__(self, argv):
         super(Launcher, self).__init__()
         self.arguments = argv
-
+        print(self.arguments)
+        self.app = bidentCore.App(self.arguments)
         
         self.isSecondInstance = False
         self.isSocketConnected = False
@@ -24,22 +26,23 @@ class Launcher(QObject):
         
         self.processArguments()
         self.singleInstanceChecked()
-
+        
         self.server = QLocalServer()
         self.server.newConnection.connect(self.newInstanceConnected)
         self.server.listen("Bident Server")
-
     
     def processArguments(self):
-        self.argParser = argparse.ArgumentParser(description='Bident Parser')
-        self.argParser.add_argument('-debug', action="store_true", default=False)
-        self.argParser.add_argument('-token', action="store")
-        self.argDict = vars(self.argParser.parse_args())
+        try:
+            temp = urllib.parse.urlparse(self.arguments[1])
+            if temp[0] == 'bident':
+                self.argDict = urllib.parse.parse_qs(temp[4])
+        except:
+            pass
     
     def singleInstanceChecked(self):
         self.socket.connectToServer("Bident Server", QIODevice.ReadWrite)
         self.socket.readyRead.connect(self.socketConnected)
-        self.socket.waitForReadyRead(500)
+        self.socket.waitForReadyRead(5000)
         if self.isSocketConnected:
             self.socketWritten(self.argDict)
             self.socket.disconnectFromServer()
@@ -60,17 +63,16 @@ class Launcher(QObject):
     
     def socketReading(self):
         self.data = ast.literal_eval(self.socket.readAll().data().decode('utf-8'))
-        if self.data['token'] is not None:
-            print(self.data['token'])
+        print(self.data)
     
     def newInstanceConnected(self):
+        print('newInstanceConnected')
         self.socket = self.server.nextPendingConnection()
         self.socket.write(b'Connected')
         self.socket.readyRead.connect(self.socketReading)
     
     def launchApplication(self):
-        self.launch = bidentCore.App(self.arguments)
-        
+        self.app.exec_()
 
 
 if __name__ == '__main__':

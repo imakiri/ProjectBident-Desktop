@@ -17,9 +17,8 @@ class Launcher(QObject):
     def __init__(self, argv):
         super(Launcher, self).__init__()
         self.arguments = argv
-        print(self.arguments)
-        self.app = bidentCore.App(self.arguments)
         
+        self.si = QApplication(self.arguments)
         self.isSecondInstance = False
         self.isSocketConnected = False
         self.socket = QLocalSocket()
@@ -37,7 +36,7 @@ class Launcher(QObject):
             if temp[0] == 'bident':
                 self.argDict = urllib.parse.parse_qs(temp[4])
         except:
-            pass
+            self.argDict = []
     
     def singleInstanceChecked(self):
         self.socket.connectToServer("Bident Server", QIODevice.ReadWrite)
@@ -72,8 +71,8 @@ class Launcher(QObject):
         self.socket.readyRead.connect(self.socketReading)
     
     def launchApplication(self):
+        self.app = bidentCore.App(self.arguments)
         self.app.exec_()
-
 
 if __name__ == '__main__':
     launcher = Launcher(sys.argv)

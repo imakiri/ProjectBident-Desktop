@@ -12,6 +12,7 @@ from PyQt5.QtNetwork import *
 import bidentGUI
 import bidentStorage
 
+
 class App(QApplication):
     
     def __init__(self, parent=None):

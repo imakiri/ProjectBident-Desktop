@@ -20,9 +20,9 @@ class LocalStorage(QStorageInfo):
         self.initDB()
         
     def initDB(self):
-        self.c.execute("""
-        CREATE TABLE IF NOT EXISTS `Settings` ()
-        """)
+        # self.c.execute("""
+        # CREATE TABLE IF NOT EXISTS `Settings` ()
+        # """)
         self.c.execute("""
         CREATE TABLE IF NOT EXISTS `Accounts` (
         `idAccount` INT NOT NULL,

@@ -14,13 +14,48 @@ class GUI(QObject):
     def __init__(self, parent):
         super(GUI, self).__init__(parent)
         
-        self.guiSettings()
+        self.setGeometry()
+        self.showWelcomeWindow()
+
+    def setGeometry(self):
+        self.primaryScreen = QGuiApplication.primaryScreen()
+        self.availableSize = self.primaryScreen.availableSize()
+        self.screenCenter = QPoint(self.availableSize.width(), self.availableSize.height()) / 2
+        self.baseBlockSize = (4, 3)
+        screenRatio = self.primaryScreen.geometry().width() / self.primaryScreen.geometry().height()
+        blockRatio = self.baseBlockSize[0] / self.baseBlockSize[1]
+        compositionRatio = 1
     
-    def guiSettings(self):
-        pass
+        isCurBiggerThanBlockComp = screenRatio > blockRatio * compositionRatio
+    
+        if isCurBiggerThanBlockComp:
+            tmp_h_min = int(self.primaryScreen.geometry().height())
+            tmp_w_min = int(self.primaryScreen.geometry().height() * blockRatio * compositionRatio)
+        else:
+            tmp_w_min = int(self.primaryScreen.geometry().width())
+            tmp_h_min = int(self.primaryScreen.geometry().width() / (blockRatio * compositionRatio))
+    
+        temporaryBlockSizeFactor = divmod(tmp_w_min, (self.baseBlockSize[0] * 30))
+    
+        if temporaryBlockSizeFactor[1] != 0:
+            if isCurBiggerThanBlockComp:
+                self.border = temporaryBlockSizeFactor[0] + 1
+            else:
+                self.border = temporaryBlockSizeFactor[0]
+        else:
+            self.border = temporaryBlockSizeFactor[0]
+    
+        self.borderMargin = QMargins(self.border, self.border, self.border, self.border)
+        self.borderSize = 2 * QSize(self.border, self.border)
+        self.borderPosition = QPoint(self.border, self.border)
+
+    def getSize(self, sizeTemplateX, sizeTemplateY):
+        return QSize(int(self.baseBlockSize[0] * self.border * sizeTemplateX),
+                     int(self.baseBlockSize[1] * self.border * sizeTemplateY))
     
     def showWelcomeWindow(self):
-        pass
+        self.welcomeWindow = WindowInterface(self)
+        self.welcomeWindow.setWindow('welcome', self.getSize(12, 12), True)
 
 
 class WindowInterface(QWidget):
@@ -36,7 +71,7 @@ class WindowInterface(QWidget):
         self.setAttribute(Qt.WA_NoSystemBackground)
         self.setWindowFlags(Qt.FramelessWindowHint)
     
-    def setSkeleton(self, size, isResizable):
+    def setWindow(self, type, size, isResizable):
         self.isResizable = isResizable
         self.customSizeHint = size
         
@@ -49,30 +84,22 @@ class WindowInterface(QWidget):
         zLayout.setContentsMargins(self.window().ui().borderMargin)
         zLayout.setSpacing(0)
         zLayout.setStackingMode(QStackedLayout.StackAll)
-        print(zLayout.geometry().size())
         self.setLayout(zLayout)
         self.layout().activate()
-        
-        uiLayout = QVBoxLayout(self)
-        uiLayout.setSpacing(0)
-        uiLayout.setAlignment(Qt.AlignTop)
-        
-        self.title = Title(self)
-        self.bar = Bar(self)
-        
-        uiLayout.addWidget(self.title)
-        uiLayout.addStretch(1)
-        uiLayout.addWidget(self.bar)
-        
-        bgLayout = QVBoxLayout(self)
-        bgLayout.setSpacing(0)
+
+        self.control = ControlLayer(type, self)
+        self.content = ContentLayer(type, self)
         self.background = Background(self)
-        bgLayout.addWidget(self.background)
+        # self.background = BackgroundLayerL(type, self)
         
-        self.layout().addChildLayout(uiLayout)
-        self.layout().addChildLayout(bgLayout)
+        # self.layout().addWidget(self.control)
+        # self.layout().addWidget(self.content)
+        self.layout().addWidget(self.background)
+        
         self.layout().activate()
-        self.resize(size)
+        # self.resize(size)
+        self.show()
+
     
     def setBorders(self):
         boxTopLeft = QSize(-self.window().ui().border, -self.window().ui().border)
@@ -353,22 +380,44 @@ class WindowInterface(QWidget):
         self.updateGeometry()
 
 
-class UserLayer(QWidget):
+class ControlLayer(QWidget):
     
-    def __init__(self, parent=None):
-        super(UserLayer, self).__init__(parent)
-
-
-class ContentLayer():
+    def __init__(self, type, parent=None):
+        super(ControlLayer, self).__init__(parent)
+        self.type = type
+        self.setMouseTracking(True)
+        
+        self.initLayer()
+        
+        
+    def initLayer(self):
+        yLayout = QVBoxLayout(self)
+        yLayout.setSpacing(0)
+        yLayout.setAlignment(Qt.AlignTop)
     
-    def __init__(self, parent=None):
+        self.title = Title(self)
+        self.bar = Bar(self)
+    
+        yLayout.addWidget(self.title)
+        yLayout.addStretch(1)
+        yLayout.addWidget(self.bar)
+        
+        
+        self.setLayout(yLayout)
+    
+
+class ContentLayer(QWidget):
+    
+    def __init__(self, type, parent=None):
         super(ContentLayer, self).__init__(parent)
+        self.type = type
 
 
 class BackgroundLayerL(QLabel):
     
-    def __init__(self, parent=None):
+    def __init__(self, type, parent=None):
         super(BackgroundLayerL, self).__init__(parent)
+        self.type = type
 
 
 class Background(QLabel):
@@ -381,10 +430,12 @@ class Background(QLabel):
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        
+        self.setupWelcomeLayout()
     
     def setupWelcomeLayout(self):
         welcomeBGPMR = QPixmap()
-        welcomeBGPMR.load(f"{scriptDir}\welcomeBG.png")
+        welcomeBGPMR.load(f"{self.window().core().exeDir}\data\welcomeBG.png")
         # welcomeBGPM = welcomeBGPMR.scaled(self.window().ui.getSize(12, 12),
         #                             Qt.KeepAspectRatioByExpanding,
         #                             Qt.SmoothTransformation)
@@ -462,7 +513,6 @@ class Title(QLabel):
         self.setAttribute(Qt.WA_Hover, True)
         self.setAutoFillBackground(True)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        
         self.oldPosition = None
     
     def setSkeleton(self):

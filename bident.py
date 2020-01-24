@@ -33,8 +33,7 @@ class Launcher(QObject):
     def processArguments(self):
         try:
             temp = urllib.parse.urlparse(self.arguments[1])
-            if temp[0] == 'bident':
-                self.argDict = urllib.parse.parse_qs(temp[4])
+            self.argDict = urllib.parse.parse_qs(temp[4])
         except:
             self.argDict = []
     
@@ -65,7 +64,6 @@ class Launcher(QObject):
         print(self.data)
     
     def newInstanceConnected(self):
-        print('newInstanceConnected')
         self.socket = self.server.nextPendingConnection()
         self.socket.write(b'Connected')
         self.socket.readyRead.connect(self.socketReading)

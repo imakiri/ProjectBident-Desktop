@@ -1,0 +1,99 @@
+QLabel {
+font-family: "Open Sans" bold;
+color: white;
+font-size: 9pt;
+line-height: 1.2;
+text-align: left;
+}
+
+QLabel#WelcomeProgramName {
+font-size: 8pt;
+line-height: 1;
+}
+
+Background {
+border: 1px solid black;
+}
+
+QLabel#Nick {
+font-size: 24px;
+}
+
+Bar > QPushButton {
+background: rgba(0, 0, 0, 0);
+font-family: "Open Sans" bold;
+color: white;
+font-size: 18pt;
+line-height: 1.2;
+text-align: center;
+margin: 1px;
+border: 0px;
+}
+
+Bar > QPushButton:hover {
+background: rgba(255, 255, 255, 31);
+}
+
+TabBar::pane {
+background: rgba(0, 255, 0, 255);
+border: 1px solid black;
+}
+
+
+TabBar::tab {
+background: rgba(0, 0, 0, 0);
+font-family: "Open Sans" bold;
+color: white;
+font-size: 18pt;
+line-height: 1.2;
+text-align: center;
+margin: 1px;
+border: 0px;
+}
+
+TabBar::tear {
+background-color: rgba(222,221,15, 45);
+}
+
+TabBar::tab:hover {
+background: rgba(255, 255, 255, 31);
+}
+
+TabBar::tab:selected {
+background: rgba(255, 255, 255, 61);
+}
+
+Title {
+background: rgba(0, 0, 0, 255);
+}
+
+Stats {
+background: rgba(0, 0, 0, 161);
+}
+
+Bar {
+background: rgba(0, 0, 0, 216);
+}
+
+QPushButton {
+background: rgba(0, 0, 0, 0);
+margin: 1px;
+border: 0px;
+}
+
+QPushButton:hover {
+background: rgba(255, 255, 255, 127);
+}
+
+QPushButton:pressed {
+padding: 0px;
+background: rgba(255, 255, 255, 63);
+}
+
+QPushButton#Exit:hover {
+background: #c8002d;
+}
+
+QPushButton#Exit:pressed {
+background: #af2d4a;
+}

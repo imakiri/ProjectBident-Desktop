@@ -17,9 +17,11 @@ class App(QApplication):
     
     def __init__(self, parent=None):
         super(App, self).__init__(parent)
-
-        self.exePath = self.arguments()[0]
-        self.exeDir = os.path.dirname(self.exePath)
+        
+        self.exePath = self.arguments()[0] # Path to the program
+        self.exeDir = os.path.dirname(self.exePath) # Path to dir
+        
+        self.setAppSettings()
         
         self.appSettings()
         
@@ -34,6 +36,16 @@ class App(QApplication):
         styleFile.open(QFile.ReadOnly)
         style = QTextStream(styleFile)
         self.setStyleSheet(style.readAll())
+        
+    def dir(self):
+        return self.exeDir
+    
+    def path(self):
+        return self.exePath
+    
+    def quit(self):
+        super(App, self).quit()
+
 
 class Dota(QObject):
     

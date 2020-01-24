@@ -15,12 +15,10 @@ class GUI(QObject):
         super(GUI, self).__init__(parent)
         
         self.setGeometry()
-        self.showWelcomeWindow()
-
+        
     def setGeometry(self):
         self.primaryScreen = QGuiApplication.primaryScreen()
         self.availableSize = self.primaryScreen.availableSize()
-        self.screenCenter = QPoint(self.availableSize.width(), self.availableSize.height()) / 2
         self.baseBlockSize = (4, 3)
         screenRatio = self.primaryScreen.geometry().width() / self.primaryScreen.geometry().height()
         blockRatio = self.baseBlockSize[0] / self.baseBlockSize[1]
@@ -45,9 +43,19 @@ class GUI(QObject):
         else:
             self.border = temporaryBlockSizeFactor[0]
     
-        self.borderMargin = QMargins(self.border, self.border, self.border, self.border)
-        self.borderSize = 2 * QSize(self.border, self.border)
-        self.borderPosition = QPoint(self.border, self.border)
+    def borderMargin(self):
+        return QMargins(self.border, self.border, self.border, self.border)
+    
+    def borderSize(self):
+        return 2 * QSize(self.border, self.border)
+    
+    def borderPosition(self):
+        return QPoint(self.border, self.border)
+
+    def screenCenter(self, size: QSize):
+        screenCenter = QPoint(self.availableSize.width(), self.availableSize.height()) / 2
+        sizePoint = QPoint(size.width(), size.height())
+        return screenCenter - sizePoint / 2
 
     def getSize(self, sizeTemplateX, sizeTemplateY):
         return QSize(int(self.baseBlockSize[0] * self.border * sizeTemplateX),
@@ -55,7 +63,9 @@ class GUI(QObject):
     
     def showWelcomeWindow(self):
         self.welcomeWindow = WindowInterface(self)
-        self.welcomeWindow.setWindow('welcome', self.getSize(12, 12), True)
+        self.welcomeWindow.setWindow('welcome', self.getSize(20, 15), False)
+        self.welcomeWindow.setShadow()
+        self.welcomeWindow.show()
 
 
 class WindowInterface(QWidget):
@@ -68,39 +78,46 @@ class WindowInterface(QWidget):
         self.setMouseTracking(True)
         self.setAttribute(Qt.WA_Hover, True)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setAutoFillBackground(True)
         self.setAttribute(Qt.WA_NoSystemBackground)
         self.setWindowFlags(Qt.FramelessWindowHint)
+
     
     def setWindow(self, type, size, isResizable):
         self.isResizable = isResizable
         self.customSizeHint = size
+        self.setContentsMargins(self.window().ui().borderMargin())
         
         zLayout = QStackedLayout(self)
-        if self.isResizable:
-            zLayout.setSizeConstraint(QLayout.SetMinAndMaxSize)
-        else:
-            zLayout.setSizeConstraint(QLayout.SetFixedSize)
-        
-        zLayout.setContentsMargins(self.window().ui().borderMargin)
+        zLayout.setContentsMargins(self.window().ui().borderMargin())
         zLayout.setSpacing(0)
         zLayout.setStackingMode(QStackedLayout.StackAll)
-        self.setLayout(zLayout)
-        self.layout().activate()
 
         self.control = ControlLayer(type, self)
-        self.content = ContentLayer(type, self)
+        # self.content = ContentLayer(type, self)
         self.background = Background(self)
         # self.background = BackgroundLayerL(type, self)
         
-        # self.layout().addWidget(self.control)
+        self.layout().addWidget(self.control)
         # self.layout().addWidget(self.content)
         self.layout().addWidget(self.background)
-        
+        self.setLayout(zLayout)
+        # self.setGeometry(QRect(self.ui().screenCenter(self.customSizeHint), self.customSizeHint))
         self.layout().activate()
-        # self.resize(size)
-        self.show()
 
+        if self.isResizable:
+            self.setBorders()
+        else:
+            pass
     
+        print(self.contentsRect())
+        print(size)
+        
+    def setShadow(self):
+        self.shadow = Shadow()
+        self.shadow.setBlurRadius(self.window().ui().border)
+        self.setGraphicsEffect(self.shadow)
+
     def setBorders(self):
         boxTopLeft = QSize(-self.window().ui().border, -self.window().ui().border)
         boxTopRight = QSize(self.window().ui().border, -self.window().ui().border)
@@ -366,10 +383,6 @@ class WindowInterface(QWidget):
         except:
             pass
     
-    def resizeEvent(self, event: QResizeEvent):
-        self.background.updateGeometry()
-        self.background.resize(self.layout().contentsRect().size())
-    
     def sizeHint(self) -> QSize:
         return self.customSizeHint
     
@@ -389,21 +402,24 @@ class ControlLayer(QWidget):
         
         self.initLayer()
         
-        
     def initLayer(self):
         yLayout = QVBoxLayout(self)
         yLayout.setSpacing(0)
         yLayout.setAlignment(Qt.AlignTop)
+        yLayout.setContentsMargins(0, 0, 0, 0)
     
         self.title = Title(self)
+        self.title.setupWelcomeLayout()
         self.bar = Bar(self)
     
         yLayout.addWidget(self.title)
         yLayout.addStretch(1)
         yLayout.addWidget(self.bar)
         
-        
         self.setLayout(yLayout)
+        
+        # shadow = Shadow()
+        # self.setGraphicsEffect(shadow)
     
 
 class ContentLayer(QWidget):
@@ -427,7 +443,6 @@ class Background(QLabel):
         
         self.setMouseTracking(True)
         self.setAttribute(Qt.WA_Hover, True)
-        self.setAttribute(Qt.WA_TranslucentBackground, True)
         self.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         
@@ -435,11 +450,12 @@ class Background(QLabel):
     
     def setupWelcomeLayout(self):
         welcomeBGPMR = QPixmap()
-        welcomeBGPMR.load(f"{self.window().core().exeDir}\data\welcomeBG.png")
-        # welcomeBGPM = welcomeBGPMR.scaled(self.window().ui.getSize(12, 12),
-        #                             Qt.KeepAspectRatioByExpanding,
-        #                             Qt.SmoothTransformation)
-        self.setPixmap(welcomeBGPMR)
+        dir = self.window().core().dir()
+        welcomeBGPMR.load(f"{dir}\data\welcomeBG.png")
+        welcomeBGPM = welcomeBGPMR.scaled(self.window().sizeHint(),
+                                    Qt.KeepAspectRatioByExpanding,
+                                    Qt.SmoothTransformation)
+        self.setPixmap(welcomeBGPM)
     
     def setupMainLayout(self):
         mainBGPMR = QPixmap(1920, 1080)
@@ -449,8 +465,8 @@ class Background(QLabel):
         #                             Qt.SmoothTransformation)
         self.setPixmap(mainBGPMR)
     
-    def sizeHint(self) -> QSize:
-        return self.parent().layout().contentsRect().size()
+    # def sizeHint(self) -> QSize:
+    #     return self.parent().layout().contentsRect().size()
 
 
 class Shadow(QGraphicsDropShadowEffect):
@@ -487,7 +503,7 @@ class Avatar(QLabel):
         self.avatarRaw = avatarRaw.scaled(self.sizeHint(),
                                           Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.avatar = self.avatarRaw.transformed(QTransform().translate(self.window().ui().border, 0))
-        # self.avatar = QPixmap(self.sizeHint())
+        # self.avatar = QPixmap(self.customSizeHint())
         # self.avatar.fill(self.avatarRaw.transformed(QTransform().translate(self.window().ui().border, 0)))
         # print(self.avatar.size())
         self.setPixmap(self.avatar)
@@ -515,42 +531,43 @@ class Title(QLabel):
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.oldPosition = None
     
-    def setSkeleton(self):
-        self.isMinimized = False
-        
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        self.setLayout(layout)
-        self.layout().activate()
-    
     def setupWelcomeLayout(self):
         self.isMinimized = True
+        dir = self.window().core().dir()
+        self.setContentsMargins(0, 0, 0, 0)
+
+        hLayout = QHBoxLayout()
+        hLayout.setContentsMargins(0, 0, 0, 0)
+        hLayout.setSpacing(0)
+        
         self.title = QLabel()
         self.spacer = QWidget()
         self.minimize = QPushButton()
         self.exit = QPushButton()
         
-        self.title.setText(app.applicationName())
+        self.title.setText(self.window().core().applicationName())
         self.title.setFixedSize(self.window().ui().getSize(3, 1) / 2)
         self.title.setObjectName("WelcomeProgramName")
         self.title.setIndent(int(self.window().ui().border / 2))
         
-        self.minimize.setIcon(QIcon(f"{scriptDir}\icon-minimize.png"))
+        self.minimize.setIcon(QIcon(f"{dir}\data\icon-minimize.png"))
         self.minimize.setFixedSize(self.window().ui().getSize(2, 1) / 2)
         self.minimize.setIconSize(self.window().ui().getSize(1, 1) / 3)
         self.minimize.clicked.connect(self.setMinimized)
         
         self.exit.setObjectName("Exit")
-        self.exit.setIcon(QIcon(f"{scriptDir}\icon-exit.png"))
+        self.exit.setIcon(QIcon(f"{dir}\data\icon-exit.png"))
         self.exit.setFixedSize(self.window().ui().getSize(2, 1) / 2)
         self.exit.setIconSize(self.window().ui().getSize(1, 1) / 3)
-        self.exit.clicked.connect(lambda: app.quit())
+        self.exit.clicked.connect(lambda: self.window().core().quit())
         
-        self.layout().addWidget(self.title, Qt.AlignTop)
-        self.layout().addWidget(self.spacer)
-        self.layout().addWidget(self.minimize)
-        self.layout().addWidget(self.exit)
+        hLayout.addWidget(self.title, Qt.AlignTop)
+        hLayout.addWidget(self.spacer)
+        hLayout.addWidget(self.minimize)
+        hLayout.addWidget(self.exit)
+
+        self.setLayout(hLayout)
+        self.layout().activate()
     
     def setupMainLayout(self):
         self.isMinimized = False

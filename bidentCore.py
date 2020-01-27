@@ -44,7 +44,12 @@ class App(QApplication):
         return self.exePath
     
     def quit(self):
-        super(App, self).quit()
+        try:
+            super(App, self).quit()
+            # QApplication.quit()
+            sys.exit()
+        except Exception as e:
+            print(e)
 
 
 class Dota(QObject):

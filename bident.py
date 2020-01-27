@@ -68,9 +68,14 @@ class Launcher(QObject):
         self.socket.write(b'Connected')
         self.socket.readyRead.connect(self.socketReading)
     
+    def launcherApp(self):
+        return self.si
+    
     def launchApplication(self):
         self.app = bidentCore.App(self.arguments)
-        self.app.exec_()
+        self.app.setParent(self)
+        sys.exit(self.app.exec_())
+
 
 if __name__ == '__main__':
     launcher = Launcher(sys.argv)

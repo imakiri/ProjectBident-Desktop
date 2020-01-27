@@ -43,6 +43,9 @@ class GUI(QObject):
         else:
             self.border = temporaryBlockSizeFactor[0]
     
+    def indent(self):
+        return int(self.border / 2)
+    
     def borderMargin(self):
         return QMargins(self.border, self.border, self.border, self.border)
     
@@ -81,8 +84,7 @@ class WindowInterface(QWidget):
         self.setAutoFillBackground(True)
         self.setAttribute(Qt.WA_NoSystemBackground)
         self.setWindowFlags(Qt.FramelessWindowHint)
-
-    
+ 
     def setWindow(self, type, size, isResizable):
         self.isResizable = isResizable
         self.customSizeHint = size
@@ -93,25 +95,26 @@ class WindowInterface(QWidget):
         zLayout.setSpacing(0)
         zLayout.setStackingMode(QStackedLayout.StackAll)
 
+        if type == 'main':
+            self.avatar = Avatar()
+            self.layout().addWidget(self.avatar)
+        else:
+            pass
         self.control = ControlLayer(type, self)
-        # self.content = ContentLayer(type, self)
+        self.content = ContentLayer(type, self)
         self.background = Background(self)
         # self.background = BackgroundLayerL(type, self)
         
         self.layout().addWidget(self.control)
-        # self.layout().addWidget(self.content)
+        self.layout().addWidget(self.content)
         self.layout().addWidget(self.background)
-        self.setLayout(zLayout)
-        # self.setGeometry(QRect(self.ui().screenCenter(self.customSizeHint), self.customSizeHint))
+
         self.layout().activate()
 
         if self.isResizable:
             self.setBorders()
         else:
             pass
-    
-        print(self.contentsRect())
-        print(size)
         
     def setShadow(self):
         self.shadow = Shadow()
@@ -407,19 +410,28 @@ class ControlLayer(QWidget):
         yLayout.setSpacing(0)
         yLayout.setAlignment(Qt.AlignTop)
         yLayout.setContentsMargins(0, 0, 0, 0)
-    
-        self.title = Title(self)
-        self.title.setupWelcomeLayout()
-        self.bar = Bar(self)
-    
-        yLayout.addWidget(self.title)
-        yLayout.addStretch(1)
-        yLayout.addWidget(self.bar)
         
+        if self.type == 'welcome':
+            self.setupWelcomeLayout()
+        elif self.type == 'main':
+            self.setupMainLayout()
+        else:
+            pass
+    
         self.setLayout(yLayout)
         
-        # shadow = Shadow()
-        # self.setGraphicsEffect(shadow)
+    def setupWelcomeLayout(self):
+        self.title = Title(self)
+        self.bar = Bar('welcome', self)
+        self.title.setupWelcomeLayout()
+        self.bar.setupWelcomeLayout()
+    
+        self.layout().addWidget(self.title)
+        self.layout().addStretch(1)
+        self.layout().addWidget(self.bar)
+    
+    def setupMainLayout(self):
+        pass
     
 
 class ContentLayer(QWidget):
@@ -548,7 +560,7 @@ class Title(QLabel):
         self.title.setText(self.window().core().applicationName())
         self.title.setFixedSize(self.window().ui().getSize(3, 1) / 2)
         self.title.setObjectName("WelcomeProgramName")
-        self.title.setIndent(int(self.window().ui().border / 2))
+        self.title.setIndent(int(self.window().ui().indent()))
         
         self.minimize.setIcon(QIcon(f"{dir}\data\icon-minimize.png"))
         self.minimize.setFixedSize(self.window().ui().getSize(2, 1) / 2)
@@ -671,24 +683,24 @@ class TabBar(QTabBar):
 
 class Bar(QLabel):
     
-    def __init__(self, parent=None):
+    def __init__(self, type, parent=None):
         super(Bar, self).__init__(parent)
-        
+        self.type = type
         self.setMouseTracking(True)
         self.setAttribute(Qt.WA_Hover, True)
         self.setAutoFillBackground(True)
+        self.initLayer()
         
-        self.isMinimized = False
-    
-    def setSkeleton(self):
+    def initLayer(self):
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         self.setLayout(layout)
-        self.layout().activate()
     
     def setupWelcomeLayout(self):
-        self.isMinimized = True
+        self.setText('imakiteki')
+        self.setAlignment(Qt.AlignRight|Qt.AlignCenter)
+        self.setIndent(self.window().ui().indent())
     
     def setupMainLayout(self):
         self.isMinimized = False
@@ -758,7 +770,7 @@ class Bar(QLabel):
         self.layout().addWidget(self.logout, Qt.AlignRight, Qt.AlignTop)
     
     def sizeHint(self) -> QSize:
-        if self.isMinimized:
+        if self.type == 'welcome':
             return QSize(self.window().layout().contentsRect().size().width(),
                          int(self.window().ui().getSize(30, 1).height() / 2))
         else:

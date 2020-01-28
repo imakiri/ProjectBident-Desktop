@@ -1,4 +1,4 @@
-QLabel {
+WindowInterface QLabel {
 font-family: "Open Sans" bold;
 color: white;
 font-size: 9pt;
@@ -6,9 +6,8 @@ line-height: 1.2;
 text-align: left;
 }
 
-QLabel#WelcomeProgramName {
+WindowInterface#welcome QLabel {
 font-size: 8pt;
-line-height: 1;
 }
 
 Background {
@@ -72,12 +71,13 @@ background: rgba(0, 0, 0, 161);
 }
 
 Bar {
-background: rgba(0, 0, 0, 216);
+background : rgba(0, 0, 0, 216);
 }
 
 QPushButton {
 background: rgba(0, 0, 0, 0);
 margin: 1px;
+padding: 2px;
 border: 0px;
 }
 

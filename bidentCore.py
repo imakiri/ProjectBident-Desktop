@@ -20,8 +20,10 @@ class App(QApplication):
         
         self.exePath = self.arguments()[0] # Path to the program
         self.exeDir = os.path.dirname(self.exePath) # Path to dir
+        self.version = '13'
         
         self.setAppSettings()
+        self.setApplicationVersion(self.version)
         
         self.appSettings()
         

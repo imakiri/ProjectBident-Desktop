@@ -79,16 +79,16 @@ class GUI(QObject):
         return int(self.baseBlockSize[1] * self.block * height)
     
     def showWelcomeWindow(self):
-        self.welcomeWindow = WindowInterface(self)
+        self.welcomeWindow = Window(self)
         self.welcomeWindow.setWindow('welcome', self.getSize(40, 30), False)
         self.welcomeWindow.setShadow()
         self.welcomeWindow.show()
 
 
-class WindowInterface(QWidget):
+class Window(QWidget):
     
     def __init__(self, parent):
-        super(WindowInterface, self).__init__()
+        super(Window, self).__init__()
         self.uiClass = parent
         self.coreClass = self.uiClass.parent()
         
@@ -375,31 +375,31 @@ class WindowInterface(QWidget):
         else:
             pass
     
-    def showMaximized(self):
-        try:
-            try:
-                self.title.restore.clicked.disconnect()
-            except:
-                pass
-            self.layout().setContentsMargins(0, 0, 0, 0)
-            super(WI, self).showMaximized()
-            self.title.restore.setIcon(QIcon(f"{scriptDir}\icon-restore.png"))
-            self.title.restore.clicked.connect(self.window().showNormal)
-        except:
-            pass
-    
-    def showNormal(self):
-        try:
-            try:
-                self.title.restore.clicked.disconnect()
-            except:
-                pass
-            self.layout().setContentsMargins(self.window().gui().borderMargin)
-            super(WI, self).showNormal()
-            self.title.restore.setIcon(QIcon(f"{scriptDir}\icon-maximize.png"))
-            self.title.restore.clicked.connect(self.window().showMaximized)
-        except:
-            pass
+    # def showMaximized(self):
+    #     try:
+    #         try:
+    #             self.title.restore.clicked.disconnect()
+    #         except:
+    #             pass
+    #         self.layout().setContentsMargins(0, 0, 0, 0)
+    #         super(WI, self).showMaximized()
+    #         self.title.restore.setIcon(QIcon(f"{scriptDir}\icon-restore.png"))
+    #         self.title.restore.clicked.connect(self.window().showNormal)
+    #     except:
+    #         pass
+    #
+    # def showNormal(self):
+    #     try:
+    #         try:
+    #             self.title.restore.clicked.disconnect()
+    #         except:
+    #             pass
+    #         self.layout().setContentsMargins(self.window().gui().borderMargin)
+    #         super(WI, self).showNormal()
+    #         self.title.restore.setIcon(QIcon(f"{scriptDir}\icon-maximize.png"))
+    #         self.title.restore.clicked.connect(self.window().showMaximized)
+    #     except:
+    #         pass
     
     def sizeHint(self) -> QSize:
         return self.customSizeHint
@@ -421,10 +421,11 @@ class ControlLayer(QWidget):
         self.initLayer()
         
     def initLayer(self):
-        yLayout = QVBoxLayout(self)
-        yLayout.setSpacing(0)
-        yLayout.setAlignment(Qt.AlignTop)
-        yLayout.setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout(self)
+        layout.setSpacing(0)
+        layout.setAlignment(Qt.AlignTop)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
         
         if self.type == 'welcome':
             self.setupWelcomeLayout()
@@ -433,7 +434,7 @@ class ControlLayer(QWidget):
         else:
             pass
     
-        self.setLayout(yLayout)
+        
         
     def setupWelcomeLayout(self):
         self.title = Title('welcome', self)
@@ -450,11 +451,90 @@ class ControlLayer(QWidget):
     
 
 class ContentLayer(QWidget):
-    
+
     def __init__(self, type, parent=None):
         super(ContentLayer, self).__init__(parent)
         self.type = type
 
+        self.initLayer()
+
+    def initLayer(self):
+        layout = QHBoxLayout(self)
+        layout.setSpacing(0)
+        layout.setAlignment(Qt.AlignTop)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.setLayout(layout)
+
+        if self.type == 'welcome':
+            self.setupWelcomeLayout()
+
+    def setupWelcomeLayout(self):
+        margin = QMargins(self.window().gui().getWidth(4),
+                          self.window().gui().getHeight(5),
+                          self.window().gui().getWidth(4),
+                          self.window().gui().getHeight(5)
+                          )
+        self.layout().setContentsMargins(margin)
+
+        tabWidget = TabWidget()
+        tabWidget.addTab(QWidget(), QIcon('G:\job\projects\prid1\data\dota2.png'), 'Dota 2')
+        tabWidget.addTab(QWidget(), QIcon(), 'Black Desert Online')
+        self.layout().addWidget(tabWidget)
+        
+        # tabBar = TabBarV(self)
+        # tabBar.setMouseTracking(True)
+        # tabBar.setAttribute(Qt.WA_Hover, True)
+        #
+        # tabBar.addTab('Dota 2')
+        # tabBar.addTab('Black Desert Online')
+        # self.layout().addWidget(tabBar)
+        
+
+
+
+class TabWidget(QTabWidget):
+    
+    def __init__(self, *args, **kwargs):
+        QTabWidget.__init__(self, *args, **kwargs)
+        self.setTabBar(TabBarV(self))
+        self.setTabPosition(QTabWidget.West)
+
+class TabBarV(QTabBar):
+    
+    def __init__(self, parent=None):
+        super(TabBarV, self).__init__(parent)
+        
+    
+    def tabSizeHint(self, index):
+        # s = QTabBar.tabSizeHint(self, index)
+        # s.transpose()
+        # return s
+        return self.window().gui().getSize(12, 2)
+    
+    
+    def paintEvent(self, event):
+        painter = QStylePainter(self)
+        opt = QStyleOptionTab()
+
+        for i in range(self.count()):
+            self.initStyleOption(opt, i)
+            painter.drawControl(QStyle.CE_TabBarTabShape, opt)
+            painter.save()
+
+            s = opt.rect.size()
+            s.transpose()
+            r = QRect(QPoint(), s)
+            r.moveCenter(opt.rect.center())
+            opt.rect = r
+
+            c = self.tabRect(i).center()
+            painter.translate(c)
+            painter.rotate(90)
+            painter.translate(-c)
+            painter.drawControl(QStyle.CE_TabBarTabLabel, opt);
+            painter.restore()
+            
 
 class BackgroundLayerL(QLabel):
     

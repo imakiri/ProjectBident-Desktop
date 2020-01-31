@@ -1,4 +1,4 @@
-WindowInterface QLabel {
+Window QLabel {
 font-family: "Open Sans" bold;
 color: white;
 font-size: 9pt;
@@ -6,7 +6,7 @@ line-height: 1.2;
 text-align: left;
 }
 
-WindowInterface#welcome QLabel {
+Window#welcome QLabel {
 font-size: 8pt;
 }
 
@@ -33,13 +33,13 @@ Bar > QPushButton:hover {
 background: rgba(255, 255, 255, 31);
 }
 
-TabBar::pane {
+TabBarV::pane {
 background: rgba(0, 255, 0, 255);
 border: 1px solid black;
 }
 
 
-TabBar::tab {
+TabBarV::tab {
 background: rgba(0, 0, 0, 0);
 font-family: "Open Sans" bold;
 color: white;
@@ -50,15 +50,15 @@ margin: 1px;
 border: 0px;
 }
 
-TabBar::tear {
+TabBarV::tear {
 background-color: rgba(222,221,15, 45);
 }
 
-TabBar::tab:hover {
+TabBarV::tab:hover {
 background: rgba(255, 255, 255, 31);
 }
 
-TabBar::tab:selected {
+TabBarV::tab:selected {
 background: rgba(255, 255, 255, 61);
 }
 

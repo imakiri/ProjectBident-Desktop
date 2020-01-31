@@ -20,10 +20,11 @@ class App(QApplication):
         
         self.exePath = self.arguments()[0] # Path to the program
         self.exeDir = os.path.dirname(self.exePath) # Path to dir
-        self.version = '13'
+        self.version = '14'
         
         self.setAppSettings()
         self.setApplicationVersion(self.version)
+        # self.setStyle(ProxyStyle())
         
         self.appSettings()
         
@@ -52,6 +53,18 @@ class App(QApplication):
             sys.exit()
         except Exception as e:
             print(e)
+
+
+class ProxyStyle(QProxyStyle):
+    def drawControl(self, element, opt, painter, widget):
+        if element == QStyle.CE_TabBarTabLabel:
+            ic = self.pixelMetric(QStyle.PM_TabBarIconSize)
+            r = QRect(opt.rect)
+            w =  0 if opt.icon.isNull() else opt.rect.width() + self.pixelMetric(QStyle.PM_TabBarIconSize)
+            r.setHeight(opt.fontMetrics.width(opt.text) + w)
+            r.moveBottom(opt.rect.bottom())
+            opt.rect = r
+        QProxyStyle.drawControl(self, element, opt, painter, widget)
 
 
 class Dota(QObject):

@@ -1,22 +1,41 @@
-import sys
-import os
-import time
-import math
-from PySide2.QtWinExtras import *
 from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from PyQt5.QtNetwork import *
+from PyQt5.QtWidgets import *
 
 
-class GUI(QObject):
+class Core(QObject):
     
     def __init__(self, parent):
-        super(GUI, self).__init__(parent)
+        super(Core, self).__init__(parent)
         
-        self.setGeometry()
+        self.geometry = Geometry(self)
         
-    def setGeometry(self):
+        self.welcome = Window(self)
+        self.welcome.setWindow('welcome', self.geom().getSize(40, 30), False)
+        self.welcome.setShadow()
+        
+        self.main = Window(self)
+        self.main.setWindow('main', self.geom().getSize(60, 60), False)
+        self.main.setShadow()
+    
+    def showWelcome(self):
+        self.welcome.show()
+    
+    def showMain(self):
+        self.main.show()
+    
+    def geom(self):
+        return self.geometry
+    
+    def app(self):
+        return self.parent()
+
+
+class Geometry(QObject):
+    
+    def __init__(self, parent):
+        super(Geometry, self).__init__(parent)
+        
         self.primaryScreen = QGuiApplication.primaryScreen()
         self.availableSize = self.primaryScreen.availableSize()
         self.baseBlockSize = (4, 3)
@@ -78,19 +97,12 @@ class GUI(QObject):
     def getHeight(self, height):
         return int(self.baseBlockSize[1] * self.block * height)
     
-    def showWelcomeWindow(self):
-        self.welcomeWindow = Window(self)
-        self.welcomeWindow.setWindow('welcome', self.getSize(40, 30), False)
-        self.welcomeWindow.setShadow()
-        self.welcomeWindow.show()
-
 
 class Window(QWidget):
     
     def __init__(self, parent):
         super(Window, self).__init__()
-        self.uiClass = parent
-        self.coreClass = self.uiClass.parent()
+        self.core = parent
         
         self.setMouseTracking(True)
         self.setAttribute(Qt.WA_Hover, True)
@@ -101,12 +113,12 @@ class Window(QWidget):
     def setWindow(self, type, size, isResizable):
         self.isResizable = isResizable
         self.customSizeHint = size
-        
+
         self.setObjectName(type)
-        self.setContentsMargins(self.window().gui().borderMargin())
+        self.setContentsMargins(self.window().geom().borderMargin())
         
         zLayout = QStackedLayout(self)
-        zLayout.setContentsMargins(self.window().gui().borderMargin())
+        zLayout.setContentsMargins(self.window().geom().borderMargin())
         zLayout.setSpacing(0)
         zLayout.setStackingMode(QStackedLayout.StackAll)
 
@@ -133,29 +145,29 @@ class Window(QWidget):
         
     def setShadow(self):
         self.shadow = Shadow()
-        self.shadow.setBlurRadius(self.window().gui().border())
+        self.shadow.setBlurRadius(self.window().geom().border())
         self.setGraphicsEffect(self.shadow)
 
     def setBorders(self):
-        boxTopLeft = QSize(-self.window().gui().border(), -self.window().gui().border())
-        boxTopRight = QSize(self.window().gui().border(), -self.window().gui().border())
-        boxBottomRight = QSize(self.window().gui().border(), self.window().gui().border())
-        boxBottomLeft = QSize(-self.window().gui().border(), self.window().gui().border())
-        boxTop = QSize(self.layout().contentsRect().width(), -self.window().gui().border())
-        boxBottom = QSize(-self.layout().contentsRect().width(), self.window().gui().border())
-        boxLeft = QSize(-self.window().gui().border(), -self.layout().contentsRect().height())
-        boxRight = QSize(self.window().gui().border(), self.layout().contentsRect().height())
-        
+        boxTopLeft = QSize(-self.window().geom().border(), -self.window().geom().border())
+        boxTopRight = QSize(self.window().geom().border(), -self.window().geom().border())
+        boxBottomRight = QSize(self.window().geom().border(), self.window().geom().border())
+        boxBottomLeft = QSize(-self.window().geom().border(), self.window().geom().border())
+        boxTop = QSize(self.layout().contentsRect().width(), -self.window().geom().border())
+        boxBottom = QSize(-self.layout().contentsRect().width(), self.window().geom().border())
+        boxLeft = QSize(-self.window().geom().border(), -self.layout().contentsRect().height())
+        boxRight = QSize(self.window().geom().border(), self.layout().contentsRect().height())
+    
         self.borderTopLeft = QRect(self.layout().contentsRect().topLeft(), boxTopLeft)
         self.borderTopRight = QRect(self.layout().contentsRect().topRight(), boxTopRight)
         self.borderBottomLeft = QRect(self.layout().contentsRect().bottomLeft(), boxBottomLeft)
         self.borderBottomRight = QRect(self.layout().contentsRect().bottomRight(), boxBottomRight)
-        
+    
         self.borderTop = QRect(self.layout().contentsRect().topLeft(), boxTop)
         self.borderRight = QRect(self.layout().contentsRect().topRight(), boxRight)
         self.borderBottom = QRect(self.layout().contentsRect().bottomRight(), boxBottom)
         self.borderLeft = QRect(self.layout().contentsRect().bottomLeft(), boxLeft)
-    
+
     def resetBorderBox(self):
         self.onTopLeft = False
         self.onTopRight = False
@@ -165,13 +177,13 @@ class Window(QWidget):
         self.onBottom = False
         self.onLeft = False
         self.onRight = False
-    
-    def gui(self):
-        return self.uiClass
-    
-    def core(self):
-        return self.coreClass
-    
+
+    def geom(self):
+        return self.core.geom()
+
+    def app(self):
+        return self.core.app()
+
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.isResizable:
             if self.borderTopLeft.contains(event.pos()):
@@ -405,7 +417,7 @@ class Window(QWidget):
         return self.customSizeHint
     
     def maximumSize(self) -> QSize:
-        return self.window().gui().availableSize + self.window().gui().borderSize
+        return self.window().geom().availableSize + self.window().geom().borderSize
     
     def leaveEvent(self, event: QEvent):
         self.updateGeometry()
@@ -470,18 +482,18 @@ class ContentLayer(QWidget):
             self.setupWelcomeLayout()
 
     def setupWelcomeLayout(self):
-        margin = QMargins(self.window().gui().getWidth(4),
-                          self.window().gui().getHeight(5),
-                          self.window().gui().getWidth(4),
-                          self.window().gui().getHeight(5)
+        margin = QMargins(self.window().geom().getWidth(4),
+                          self.window().geom().getHeight(5),
+                          self.window().geom().getWidth(4),
+                          self.window().geom().getHeight(5)
                           )
         self.layout().setContentsMargins(margin)
-
+    
         tabWidget = TabWidget()
         tabWidget.addTab(QWidget(), QIcon('G:\job\projects\prid1\data\dota2.png'), 'Dota 2')
         tabWidget.addTab(QWidget(), QIcon(), 'Black Desert Online')
         self.layout().addWidget(tabWidget)
-        
+    
         # tabBar = TabBarV(self)
         # tabBar.setMouseTracking(True)
         # tabBar.setAttribute(Qt.WA_Hover, True)
@@ -491,14 +503,13 @@ class ContentLayer(QWidget):
         # self.layout().addWidget(tabBar)
         
 
-
-
 class TabWidget(QTabWidget):
     
     def __init__(self, *args, **kwargs):
         QTabWidget.__init__(self, *args, **kwargs)
         self.setTabBar(TabBarV(self))
         self.setTabPosition(QTabWidget.West)
+
 
 class TabBarV(QTabBar):
     
@@ -510,7 +521,7 @@ class TabBarV(QTabBar):
         # s = QTabBar.tabSizeHint(self, index)
         # s.transpose()
         # return s
-        return self.window().gui().getSize(12, 2)
+        return self.window().geom().getSize(12, 2)
     
     
     def paintEvent(self, event):
@@ -557,7 +568,7 @@ class Background(QLabel):
     
     def setupWelcomeLayout(self):
         welcomeBGPMR = QPixmap()
-        dir = self.window().core().dir()
+        dir = self.window().app().dir()
         welcomeBGPMR.load(f"{dir}\data\welcomeBG.png")
         welcomeBGPM = welcomeBGPMR.scaled(self.window().sizeHint(),
                                     Qt.KeepAspectRatioByExpanding,
@@ -595,36 +606,36 @@ class Avatar(QLabel):
     
     def __init__(self, parent=None):
         super(Avatar, self).__init__(parent)
-        
-        self.setObjectName("MainWindow.Avatar")
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.setStyleSheet('background: rgba(0, 255, 255, 63);')
-        
-        self.initPixmap()
-        self.initShadow()
-        self.resize(self.sizeHint())
-    
-    def initPixmap(self):
-        avatarRaw = QPixmap()
-        avatarRaw.load(f"{scriptDir}\\avatar.png")
-        self.avatarRaw = avatarRaw.scaled(self.sizeHint(),
-                                          Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        self.avatar = self.avatarRaw.transformed(QTransform().translate(self.window().gui().border(), 0))
-        # self.avatar = QPixmap(self.customSizeHint())
-        # self.avatar.fill(self.avatarRaw.transformed(QTransform().translate(self.window().ui().block, 0)))
-        # print(self.avatar.size())
-        self.setPixmap(self.avatar)
-    
-    def initShadow(self):
-        shadow = Shadow()
-        shadow.setBlurRadius(self.window().gui().border)
-        self.setGraphicsEffect(shadow)
-    
-    def sizeHint(self) -> QSize:
-        return self.window().gui().getSize(4, 5)
-    
-    def minimumSize(self) -> QSize:
-        return self.window().gui().getSize(4, 5)
+    #
+    #     self.setObjectName("MainWindow.Avatar")
+    #     self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+    #     self.setStyleSheet('background: rgba(0, 255, 255, 63);')
+    #
+    #     self.initPixmap()
+    #     self.initShadow()
+    #     self.resize(self.sizeHint())
+    #
+    # def initPixmap(self):
+    #     avatarRaw = QPixmap()
+    #     avatarRaw.load(f"{dir}\\avatar.png")
+    #     self.avatarRaw = avatarRaw.scaled(self.sizeHint(),
+    #                                       Qt.KeepAspectRatio, Qt.SmoothTransformation)
+    #     self.avatar = self.avatarRaw.transformed(QTransform().translate(self.window().geom().border(), 0))
+    #     # self.avatar = QPixmap(self.customSizeHint())
+    #     # self.avatar.fill(self.avatarRaw.transformed(QTransform().translate(self.window().ui().block, 0)))
+    #     # print(self.avatar.size())
+    #     self.setPixmap(self.avatar)
+    #
+    # def initShadow(self):
+    #     shadow = Shadow()
+    #     shadow.setBlurRadius(self.window().geom().border)
+    #     self.setGraphicsEffect(shadow)
+    #
+    # def sizeHint(self) -> QSize:
+    #     return self.window().geom().getSize(4, 5)
+    #
+    # def minimumSize(self) -> QSize:
+    #     return self.window().geom().getSize(4, 5)
 
 
 class Title(QWidget):
@@ -649,28 +660,28 @@ class Title(QWidget):
         self.layout().activate()
 
     def setupWelcomeLayout(self):
-        dir = self.window().core().dir()
-        
+        dir = self.window().app().dir()
+    
         self.title = QLabel()
         self.spacer = QWidget()
         self.minimize = QPushButton()
         self.exit = QPushButton()
-        
-        self.title.setText(self.window().core().applicationName())
-        self.title.setFixedSize(self.window().gui().getSize(3, 1))
-        self.title.setIndent(int(self.window().gui().indent()))
-        
+    
+        self.title.setText(self.window().app().applicationName())
+        self.title.setFixedSize(self.window().geom().getSize(3, 1))
+        self.title.setIndent(int(self.window().geom().indent()))
+    
         self.minimize.setIcon(QIcon(f"{dir}\data\icon-minimize.png"))
-        self.minimize.setFixedSize(self.window().gui().getSize(2, 1))
-        self.minimize.setIconSize(self.window().gui().getSize(1, 1) - self.window().gui().indentSize())
+        self.minimize.setFixedSize(self.window().geom().getSize(2, 1))
+        self.minimize.setIconSize(self.window().geom().getSize(1, 1) - self.window().geom().indentSize())
         self.minimize.clicked.connect(self.setMinimized)
-        
+    
         self.exit.setObjectName("Exit")
         self.exit.setIcon(QIcon(f"{dir}\data\icon-exit.png"))
-        self.exit.setFixedSize(self.window().gui().getSize(2, 1))
-        self.exit.setIconSize(self.window().gui().getSize(1, 1) - self.window().gui().indentSize())
-        self.exit.clicked.connect(lambda: self.window().core().quit())
-        
+        self.exit.setFixedSize(self.window().geom().getSize(2, 1))
+        self.exit.setIconSize(self.window().geom().getSize(1, 1) - self.window().geom().indentSize())
+        self.exit.clicked.connect(lambda: self.window().app().quit())
+    
         self.layout().addWidget(self.title, Qt.AlignTop)
         self.layout().addWidget(self.spacer)
         self.layout().addWidget(self.minimize)
@@ -679,38 +690,38 @@ class Title(QWidget):
     def setupMainLayout(self):
         self.isMinimized = False
         self.title = QLabel()
-        self.avatar = Avatar(self)
+        # self.avatar = Avatar(self)
         self.nick = QLabel()
         self.minimize = QPushButton()
         self.restore = QPushButton()
         self.exit = QPushButton()
         self.spacerL = QWidget()
         self.spacerR = QWidget()
-        
+
         self.title.setText(app.applicationName())
-        self.title.setFixedSize(self.window().gui().getSize(14, 2))
-        self.title.setIndent(self.window().gui().border())
-        
+        self.title.setFixedSize(self.window().geom().getSize(14, 2))
+        self.title.setIndent(self.window().geom().border())
+
         self.nick.setText(nickname)
-        self.nick.setFixedSize(self.window().gui().getSize(40, 2))
-        self.nick.setIndent(self.window().gui().border())
+        self.nick.setFixedSize(self.window().geom().getSize(40, 2))
+        self.nick.setIndent(self.window().geom().border())
         self.nick.setObjectName("Nick")
-        
+
         self.minimize.setIcon(QIcon(f"{scriptDir}\icon-minimize.png"))
-        self.minimize.setFixedSize(self.window().gui().getSize(2, 2))
-        self.minimize.setIconSize(self.window().gui().getSize(2, 2) / 3)
+        self.minimize.setFixedSize(self.window().geom().getSize(2, 2))
+        self.minimize.setIconSize(self.window().geom().getSize(2, 2) / 3)
         self.minimize.clicked.connect(self.setMinimized)
-        
+
         self.restore.setIcon(QIcon(f"{scriptDir}\icon-maximize.png"))
-        self.restore.setFixedSize(self.window().gui().getSize(1, 1))
-        self.restore.setIconSize(self.window().gui().getSize(2, 2) / 3)
-        
+        self.restore.setFixedSize(self.window().geom().getSize(1, 1))
+        self.restore.setIconSize(self.window().geom().getSize(2, 2) / 3)
+
         self.exit.setObjectName("Exit")
         self.exit.setIcon(QIcon(f"{scriptDir}\icon-exit.png"))
-        self.exit.setFixedSize(self.window().gui().getSize(1, 1))
-        self.exit.setIconSize(self.window().gui().getSize(2, 2) / 3)
+        self.exit.setFixedSize(self.window().geom().getSize(1, 1))
+        self.exit.setIconSize(self.window().geom().getSize(2, 2) / 3)
         self.exit.clicked.connect(lambda: app.quit())
-        
+
         self.layout().addWidget(self.title)
         self.layout().addWidget(self.spacerL)
         self.layout().addWidget(self.avatar)
@@ -748,10 +759,10 @@ class Title(QWidget):
     def sizeHint(self) -> QSize:
         if self.isMinimized:
             return QSize(self.window().layout().contentsRect().size().width(),
-                         self.window().gui().getHeight(1))
+                         self.window().geom().getHeight(1))
         else:
             return QSize(self.window().layout().contentsRect().size().width(),
-                         self.window().gui().getHeight(2))
+                         self.window().geom().getHeight(2))
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -779,7 +790,7 @@ class TabBar(QTabBar):
         self.addTab("History")
     
     def tabSizeHint(self, index: int) -> QSize:
-        return self.window().gui().getSize(4, 1)
+        return self.window().geom().getSize(4, 1)
 
 
 class Bar(QWidget):
@@ -798,15 +809,15 @@ class Bar(QWidget):
         self.setLayout(layout)
     
     def setupWelcomeLayout(self):
-        self.version = QLabel(f'v.{self.window().core().applicationVersion()}')
+        self.version = QLabel(f'v.{self.window().app().applicationVersion()}')
         self.spacer = QWidget()
         self.author = QLabel('imakiteki')
 
         # self.version.setAlignment(Qt.AlignLeft)
-        self.version.setIndent(self.window().gui().indent())
-        
-        self.author.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-        self.author.setIndent(self.window().gui().indent())
+        self.version.setIndent(self.window().geom().indent())
+    
+        self.author.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.author.setIndent(self.window().geom().indent())
         
         self.layout().addWidget(self.version)
         self.layout().addWidget(self.spacer)
@@ -816,21 +827,21 @@ class Bar(QWidget):
         self.isMinimized = False
         self.dotaBident = QPushButton()
         self.dotaBident.setIcon(QIcon(f"{scriptDir}\logo.ico"))
-        self.dotaBident.setIconSize(self.window().gui().getSize(1, 1) * 8 / 9)
-        self.dotaBident.setFixedSize(self.window().gui().getSize(1, 1))
-        
+        self.dotaBident.setIconSize(self.window().geom().getSize(1, 1) * 8 / 9)
+        self.dotaBident.setFixedSize(self.window().geom().getSize(1, 1))
+    
         self.stratz = QPushButton()
         self.stratz.setIcon(QIcon(f"{scriptDir}\stratz.png"))
-        self.stratz.setIconSize(self.window().gui().getSize(1, 1) * 8 / 9)
-        self.stratz.setFixedSize(self.window().gui().getSize(1, 1))
-        
+        self.stratz.setIconSize(self.window().geom().getSize(1, 1) * 8 / 9)
+        self.stratz.setFixedSize(self.window().geom().getSize(1, 1))
+    
         self.dota2 = QPushButton()
         self.dota2.setIcon(QIcon(f"{scriptDir}\dota2.png"))
-        self.dota2.setIconSize(self.window().gui().getSize(1, 1) * 8 / 9)
-        self.dota2.setFixedSize(self.window().gui().getSize(1, 1))
-        
+        self.dota2.setIconSize(self.window().geom().getSize(1, 1) * 8 / 9)
+        self.dota2.setFixedSize(self.window().geom().getSize(1, 1))
+    
         self.tabs = TabBar()
-        
+    
         # self.profile = QPushButton()
         # self.profile.setText("Profile")
         # self.profile.setFixedSize(self.window().ui().getSize(3, 1))
@@ -846,25 +857,25 @@ class Bar(QWidget):
         # self.history = QPushButton()
         # self.history.setText("History")
         # self.history.setFixedSize(self.window().ui().getSize(3, 1))
-        
+    
         self.update = QPushButton()
         self.update.setIcon(QIcon(f"{scriptDir}\icon-refresh.png"))
-        self.update.setIconSize(self.window().gui().getSize(1, 1) * 8 / 9)
-        self.update.setFixedSize(self.window().gui().getSize(1, 1))
-        
+        self.update.setIconSize(self.window().geom().getSize(1, 1) * 8 / 9)
+        self.update.setFixedSize(self.window().geom().getSize(1, 1))
+    
         self.settings = QPushButton()
         self.settings.setIcon(QIcon(f"{scriptDir}\icon-settings.png"))
-        self.settings.setIconSize(self.window().gui().getSize(1, 1) * 8 / 9)
-        self.settings.setFixedSize(self.window().gui().getSize(1, 1))
-        
+        self.settings.setIconSize(self.window().geom().getSize(1, 1) * 8 / 9)
+        self.settings.setFixedSize(self.window().geom().getSize(1, 1))
+    
         self.logout = QPushButton()
         self.logout.setIcon(QIcon(f"{scriptDir}\icon-logout.png"))
-        self.logout.setIconSize(self.window().gui().getSize(1, 1) * 8 / 9)
-        self.logout.setFixedSize(self.window().gui().getSize(1, 1))
-        
+        self.logout.setIconSize(self.window().geom().getSize(1, 1) * 8 / 9)
+        self.logout.setFixedSize(self.window().geom().getSize(1, 1))
+    
         self.spacerL = QWidget()
         self.spacerR = QWidget()
-        
+    
         self.layout().addWidget(self.dotaBident, Qt.AlignLeft, Qt.AlignTop)
         self.layout().addWidget(self.stratz, Qt.AlignLeft, Qt.AlignTop)
         self.layout().addWidget(self.dota2, Qt.AlignLeft, Qt.AlignTop)
@@ -882,10 +893,10 @@ class Bar(QWidget):
     def sizeHint(self) -> QSize:
         if self.type == 'welcome':
             return QSize(self.window().layout().contentsRect().size().width(),
-                         self.window().gui().getHeight(1))
+                         self.window().geom().getHeight(1))
         else:
             return QSize(self.window().layout().contentsRect().size().width(),
-                         self.window().gui().getHeight(2))
+                         self.window().geom().getHeight(2))
 
     def paintEvent(self, event):
         painter = QPainter(self)

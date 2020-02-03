@@ -1,14 +1,11 @@
-import sys
 import os
-import time
-import multiprocessing
-import argparse
-import ast
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtNetwork import *
+import sys
 
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+
+import bidentDota
 import bidentGUI
 import bidentStorage
 
@@ -17,11 +14,11 @@ class App(QApplication):
     
     def __init__(self, parent=None):
         super(App, self).__init__(parent)
-        
-        self.exePath = self.arguments()[0] # Path to the program
-        self.exeDir = os.path.dirname(self.exePath) # Path to dir
-        self.version = '14'
-        
+    
+        self.exePath = self.arguments()[0]  # Path to the program
+        self.exeDir = os.path.dirname(self.exePath)  # Path to dir
+        self.version = '15'
+    
         self.setAppSettings()
         self.setApplicationVersion(self.version)
         # self.setStyle(ProxyStyle())
@@ -39,10 +36,10 @@ class App(QApplication):
         styleFile.open(QFile.ReadOnly)
         style = QTextStream(styleFile)
         self.setStyleSheet(style.readAll())
-        
+
     def dir(self):
         return self.exeDir
-    
+
     def path(self):
         return self.exePath
     
@@ -65,11 +62,5 @@ class ProxyStyle(QProxyStyle):
             r.moveBottom(opt.rect.bottom())
             opt.rect = r
         QProxyStyle.drawControl(self, element, opt, painter, widget)
-
-
-class Dota(QObject):
-    
-    def __init__(self, parent=None):
-        super(Dota, self).__init__(parent)
 
 

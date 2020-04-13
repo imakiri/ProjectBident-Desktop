@@ -23,7 +23,7 @@ class RWDError(Exception):
     
     def __str__(self):
         tmp = ', '.join(map(str, self.args))
-        return repr(f'{self.name}: {tmp}')
+        return f'{self.name}: {tmp}'
 
 
 class Area:
@@ -34,7 +34,8 @@ class Area:
             'Default': {
                 'imgSize': (0, 0),
                 'topLeft': (0, 0),
-                'bottomRight': (0, 0)
+                'bottomRight': (0, 0),
+                'mod': (0, 0)
             }
         }
     
@@ -82,15 +83,22 @@ class Area:
             raise RWDError('Additional argument required', 'ry')
         if type(name) is not str:
             raise RWDError('Incorrect argument type', 'name', type(name))
-        
-        # self.templates[name].update({'mod': mod, 'rx': rx, 'ry': ry})
-    
-    # def getBox(self, imgSize: tuple, ):
+
+        self.templates[name].update({'mod': mod, 'rx': rx, 'ry': ry})
+
+    def getBox(self, imgSize: tuple, templateName: str) -> tuple:
+        """
+        Returns box for given imgSize and templateName
+        :param imgSize: Given image size
+        :param templateName: Given template
+        :return box: (top-left point: (x, y), box size: (x, y))
+        """
+        pass
 
 
 A = Area()
 try:
-    A.setTemplateProperties('sdfg', (2, 0))
+    # A.setTemplateProperties('sdfg', (2, 0))
+    A.delTemplate('fgh')
 except Exception as e:
     print(e)
-# A.delTemplate('fgh')

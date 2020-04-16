@@ -63,7 +63,7 @@ if __name__ == '__main__':
     exe = True
     db.read('B')
     while exe:
-        print(f'Current table: {tables[c]}')
+        print(f'\nCurrent table: {tables[c]}')
         last = db.read(tables[c])
         try:
             print(

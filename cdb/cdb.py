@@ -1,3 +1,4 @@
+import json
 import re
 import sqlite3
 import time
@@ -9,6 +10,7 @@ class LocalStorage():
     def __init__(self):
         self.conn = sqlite3.connect('data.db')
         self.initDB()
+        self.initSettings()
     
     def initDB(self):
         c = self.conn.cursor()
@@ -32,7 +34,39 @@ class LocalStorage():
         PRIMARY KEY (`Time`))
         """)
         self.conn.commit()
+
+    def initSettings(self):
+        default = {
+            'default table': 0
+        }
+        try:
+            s = open('settings.json', 'r+')
+            settings = json.load(s)
+            settings['default table']
+            print('Settings has been loaded')
+        except json.decoder.JSONDecodeError:
+            s = open('settings.json', 'r+')
+            json.dump(default, s)
+            print('Settings has been restored to default')
+        except FileNotFoundError:
+            s = open('settings.json', 'w+')
+            json.dump(default, s)
+            print('Settings has been restored to default')
+        except Exception as e:
+            print(e)
+            exe = False
     
+        self.s = s
+        self.settings = settings
+
+    def changeSettings(self, name: str, value: int):
+        self.settings: dict
+        self.settings[name] = value
+        try:
+            json.dump(self.settings, self.s)
+        except Exception as e:
+            print(e)
+
     def write(self, table: str, name: str, data: int):
         c = self.conn.cursor()
         names = {
@@ -45,13 +79,13 @@ class LocalStorage():
         c.execute(sqlQ, [int(time.time()), data])
         self.conn.commit()
         print('Done')
-    
-    def read(self, table: str):
+
+    def readLast(self, table: str):
         c = self.conn.cursor()
-        sqlQ = f'SELECT * FROM "Dota2 {table}" ORDER BY Time DESC LIMIT 1'
-        data = c.execute(sqlQ)
+        sqlQ = f'SELECT * FROM "Dota2 {table}" ORDER BY Time DESC LIMIT 4'
+        data = c.execute(sqlQ).fetchall()
         try:
-            return data.fetchall()[0]
+            return list(map(lambda y: list(filter(lambda x: x is not None, y))[0], zip(*data)))
         except:
             return None
 
@@ -59,30 +93,39 @@ class LocalStorage():
 if __name__ == '__main__':
     db = LocalStorage()
     tables = ['A', 'B']
-    c = 1
+    c = db.settings['default table']
     exe = True
-    db.read('B')
+
     while exe:
-        print(f'\nCurrent table: {tables[c]}')
-        last = db.read(tables[c])
+        print(f'Current table: {tables[c]}')
+        last = db.readLast(tables[c])
         try:
             print(
                 f'Last record: | Date: {dt.fromtimestamp(last[0])} | MMR: {last[1]} | BScore: {last[2]} | Rank: {last[3]} | Percent: {last[4]} |')
         except:
             print('No records')
-        
+    
         tmp = input('Enter command\data: ')
-        
+    
         try:
-            t = r'(e|n)|(|b|r|p)(\d{2,5})'
+            t = r'(e|n|d)|(|b|r|p)(\d{2,5})'
             r = re.fullmatch(t, tmp).groups()
         except:
-            print('Wrong command\data')
-        
+            print('Wrong command\data\n')
+    
         if r[0] == 'e':
             exe = False
             break
         elif r[0] == 'n':
             c = (c + 1) % len(tables)
+            print(
+                '-------------------------------------------------------------------------------------------------------------------------')
+        elif r[0] == 'd':
+            c = (c + 1) % len(tables)
+            db.changeSettings('default table', c)
+            print(
+                '-------------------------------------------------------------------------------------------------------------------------')
         else:
             db.write(tables[c], r[1], int(r[2]))
+            print(
+                '-------------------------------------------------------------------------------------------------------------------------')

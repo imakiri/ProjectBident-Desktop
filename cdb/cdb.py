@@ -138,9 +138,8 @@ def main(workDir):
 
 
 if __name__ == '__main__':
-    main(os.path.dirname(sys.argv[0]))
-    # try:
-    #     main(os.path.dirname(sys.argv[0]))
-    # except Exception as e:
-    #     print(e)
-    #     input('Press Enter to exit')
+    try:
+        main(os.path.dirname(sys.argv[0]))
+    except Exception as e:
+        print(e)
+        input('Press Enter to exit')

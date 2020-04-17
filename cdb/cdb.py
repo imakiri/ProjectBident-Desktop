@@ -1,14 +1,17 @@
 import json
+import os
 import re
 import sqlite3
+import sys
 import time
 from datetime import datetime as dt
 
 
 class LocalStorage():
     
-    def __init__(self):
-        self.conn = sqlite3.connect('data.db')
+    def __init__(self, workDir):
+        self.workDir = workDir
+        self.conn = sqlite3.connect(f'{self.workDir}/data.db')
         self.initDB()
         self.initSettings()
     
@@ -55,9 +58,10 @@ class LocalStorage():
         except Exception as e:
             print(e)
             exe = False
-    
+            pass
+
         self.s = s
-        self.settings = settings
+        self.settings = json.load(s)
 
     def changeSettings(self, name: str, value: int):
         self.settings: dict
@@ -90,8 +94,8 @@ class LocalStorage():
             return None
 
 
-def main():
-    db = LocalStorage()
+def main(workDir):
+    db = LocalStorage(workDir)
     tables = ['A', 'B']
     c = db.settings['default table']
     exe = True
@@ -132,8 +136,9 @@ def main():
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        print(e)
-        input('Press Enter to exit')
+    main(os.path.dirname(sys.argv[0]))
+    # try:
+    #     main(os.path.dirname(sys.argv[0]))
+    # except Exception as e:
+    #     print(e)
+    #     input('Press Enter to exit')

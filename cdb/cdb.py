@@ -43,31 +43,33 @@ class LocalStorage():
             'default table': 0
         }
         try:
-            s = open('settings.json', 'r+')
+            s = open(f'{self.workDir}/settings.json', 'r+')
             settings = json.load(s)
+            self.settings = json.load(s)
             settings['default table']
             print('Settings has been loaded')
         except json.decoder.JSONDecodeError:
-            s = open('settings.json', 'r+')
-            json.dump(default, s)
+            json.dump(default, open(f'{self.workDir}/settings.json', 'w+'))
+            s = open(f'{self.workDir}/settings.json', 'r')
+            self.settings = json.load(s)
             print('Settings has been restored to default')
         except FileNotFoundError:
-            s = open('settings.json', 'w+')
-            json.dump(default, s)
+            json.dump(default, open(f'{self.workDir}/settings.json', 'w+'))
+            s = open(f'{self.workDir}/settings.json', 'r')
+            self.settings = json.load(s)
             print('Settings has been restored to default')
         except Exception as e:
             print(e)
             exe = False
             pass
 
-        self.s = s
-        self.settings = json.load(s)
 
     def changeSettings(self, name: str, value: int):
         self.settings: dict
         self.settings[name] = value
         try:
-            json.dump(self.settings, self.s)
+            s = open(f'{self.workDir}/settings.json', 'w+')
+            json.dump(self.settings, s)
         except Exception as e:
             print(e)
 
@@ -123,16 +125,16 @@ def main(workDir):
         elif r[0] == 'n':
             c = (c + 1) % len(tables)
             print(
-                '-------------------------------------------------------------------------------------------------------------------------')
+                '------------------------------------------------------------------------------------------------------------------------')
         elif r[0] == 'd':
             c = (c + 1) % len(tables)
             db.changeSettings('default table', c)
             print(
-                '-------------------------------------------------------------------------------------------------------------------------')
+                '------------------------------------------------------------------------------------------------------------------------')
         else:
             db.write(tables[c], r[1], int(r[2]))
             print(
-                '-------------------------------------------------------------------------------------------------------------------------')
+                '------------------------------------------------------------------------------------------------------------------------')
 
 
 if __name__ == '__main__':

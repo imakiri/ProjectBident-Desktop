@@ -90,12 +90,12 @@ class LocalStorage():
             return None
 
 
-if __name__ == '__main__':
+def main():
     db = LocalStorage()
     tables = ['A', 'B']
     c = db.settings['default table']
     exe = True
-
+    
     while exe:
         print(f'Current table: {tables[c]}')
         last = db.readLast(tables[c])
@@ -104,15 +104,15 @@ if __name__ == '__main__':
                 f'Last record: | Date: {dt.fromtimestamp(last[0])} | MMR: {last[1]} | BScore: {last[2]} | Rank: {last[3]} | Percent: {last[4]} |')
         except:
             print('No records')
-    
+        
         tmp = input('Enter command\data: ')
-    
+        
         try:
             t = r'(e|n|d)|(|b|r|p)(\d{2,5})'
             r = re.fullmatch(t, tmp).groups()
         except:
             print('Wrong command\data\n')
-    
+        
         if r[0] == 'e':
             exe = False
             break
@@ -129,3 +129,11 @@ if __name__ == '__main__':
             db.write(tables[c], r[1], int(r[2]))
             print(
                 '-------------------------------------------------------------------------------------------------------------------------')
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as e:
+        print(e)
+        input('Press Enter to exit')

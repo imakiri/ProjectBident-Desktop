@@ -1,8 +1,6 @@
 import json
-import os
 import re
 import sqlite3
-import sys
 import time
 from datetime import datetime as dt
 
@@ -18,25 +16,68 @@ class LocalStorage():
     def initDB(self):
         c = self.conn.cursor()
         c.execute("""
-        CREATE TABLE IF NOT EXISTS `Dota2 A` (
-        `Time` INT NOT NULL,
-        `MMR` INT,
-        `BScore` INT,
-        `Rank` INT,
-        `Percent` INT,
-        PRIMARY KEY (`Time`))
+        CREATE TABLE Names (
+            Name CHAR UNIQUE
+                    NOT NULL
+                    PRIMARY KEY
+        );
         """)
         c = self.conn.cursor()
         c.execute("""
-        CREATE TABLE IF NOT EXISTS `Dota2 B` (
-        `Time` INT NOT NULL,
-        `MMR` INT,
-        `BScore` INT,
-        `Rank` INT,
-        `Percent` INT,
-        PRIMARY KEY (`Time`))
+        CREATE TABLE MMR (
+            Time INT PRIMARY KEY ASC
+                    UNIQUE
+                    NOT NULL,
+            Name CHAR REFERENCES Names (Name) MATCH [FULL]
+                    NOT NULL,
+            MMR INT NOT NULL
+        )
+        WITHOUT ROWID;
+        """)
+        c = self.conn.cursor()
+        c.execute("""
+        CREATE TABLE BScore (
+            Time INT PRIMARY KEY ASC
+                    UNIQUE
+                    NOT NULL,
+            Name CHAR REFERENCES Names (Name) MATCH [FULL]
+                    NOT NULL,
+            BScore INT NOT NULL
+        )
+        WITHOUT ROWID;
+        """)
+        c = self.conn.cursor()
+        c.execute("""
+        CREATE TABLE Rank (
+            Time INT PRIMARY KEY ASC
+                    UNIQUE
+                    NOT NULL,
+            Name CHAR REFERENCES Names (Name) MATCH [FULL]
+                    NOT NULL,
+            Rank INT NOT NULL
+        )
+        WITHOUT ROWID;
+        """)
+        c = self.conn.cursor()
+        c.execute("""
+        CREATE TABLE Percent (
+            Time INT PRIMARY KEY ASC
+                    UNIQUE
+                    NOT NULL,
+            Name CHAR REFERENCES Names (Name) MATCH [FULL]
+                    NOT NULL,
+            Percent INT NOT NULL
+        )
+        WITHOUT ROWID;
         """)
         self.conn.commit()
+    
+        self.tables = {
+            '': 'MMR',
+            'b': 'BScore',
+            'r': 'Rank',
+            'p': 'Percent'
+        }
 
     def initSettings(self):
         default = {
@@ -63,7 +104,6 @@ class LocalStorage():
             exe = False
             pass
 
-
     def changeSettings(self, name: str, value: int):
         self.settings: dict
         self.settings[name] = value
@@ -73,20 +113,16 @@ class LocalStorage():
         except Exception as e:
             print(e)
 
-    def write(self, table: str, name: str, data: int):
+    def write(self, tableCode: str, name: str, data: int):
         c = self.conn.cursor()
-        names = {
-            '': 'MMR',
-            'b': 'BScore',
-            'r': 'Rank',
-            'p': 'Percent'
-        }
-        sqlQ = f'''INSERT INTO "Dota2 {table}"(Time, {names[name]}) VALUES (?, ?)'''
-        c.execute(sqlQ, [int(time.time()), data])
+        t = self.tables[tableCode]
+        sqlQ = f'''INSERT INTO "{t}"(Time, Name, {t}) VALUES (?, ?, ?)'''
+        c.execute(sqlQ, [int(time.time()), name, data])
         self.conn.commit()
         print('Done')
 
     def readLast(self, table: str):
+        ###################################################################################
         c = self.conn.cursor()
         sqlQ = f'SELECT * FROM "Dota2 {table}" ORDER BY Time DESC LIMIT 4'
         data = c.execute(sqlQ).fetchall()
@@ -94,12 +130,13 @@ class LocalStorage():
             return list(map(lambda y: list(filter(lambda x: x is not None, y))[0], zip(*data)))
         except:
             return None
+        ###################################################################################
 
 
 def main(workDir):
     db = LocalStorage(workDir)
-    tables = ['A', 'B']
-    c = db.settings['default table']
+    tables = {}
+    c = db.settings['Last name']
     exe = True
     
     while exe:
@@ -114,7 +151,7 @@ def main(workDir):
         tmp = input('Enter command\data: ')
         
         try:
-            t = r'(e|n|d)|(|b|r|p)(\d{2,5})'
+            t = r'(\D).*|(\d{1,5})|b(\d{1,5})|r(\d{2})|p(\d{1,3})'
             r = re.fullmatch(t, tmp).groups()
         except:
             print('Wrong command\data\n')
@@ -131,15 +168,17 @@ def main(workDir):
             db.changeSettings('default table', c)
             print(
                 '------------------------------------------------------------------------------------------------------------------------')
-        else:
-            db.write(tables[c], r[1], int(r[2]))
-            print(
-                '------------------------------------------------------------------------------------------------------------------------')
+        elif r[0] == '':
+            try:
+                db.write(r[0], )
+                print(
+                    '------------------------------------------------------------------------------------------------------------------------')
 
 
 if __name__ == '__main__':
-    try:
-        main(os.path.dirname(sys.argv[0]))
-    except Exception as e:
-        print(e)
-        input('Press Enter to exit')
+    pass
+    # try:
+    #     main(os.path.dirname(sys.argv[0]))
+    # except Exception as e:
+    #     print(e)
+    #     input('Press Enter to exit')

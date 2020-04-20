@@ -1,30 +1,28 @@
-import json
+import os
 import re
 import sqlite3
+import sys
 import time
-from datetime import datetime as dt
 
 
-class LocalStorage():
+class Data():
     
     def __init__(self, workDir):
         self.workDir = workDir
         self.conn = sqlite3.connect(f'{self.workDir}/data.db')
         self.initDB()
-        self.initSettings()
     
     def initDB(self):
         c = self.conn.cursor()
         c.execute("""
-        CREATE TABLE Names (
+        CREATE TABLE IF NOT EXISTS Names (
             Name CHAR UNIQUE
                     NOT NULL
                     PRIMARY KEY
         );
         """)
-        c = self.conn.cursor()
         c.execute("""
-        CREATE TABLE MMR (
+        CREATE TABLE IF NOT EXISTS MMR (
             Time INT PRIMARY KEY ASC
                     UNIQUE
                     NOT NULL,
@@ -34,9 +32,8 @@ class LocalStorage():
         )
         WITHOUT ROWID;
         """)
-        c = self.conn.cursor()
         c.execute("""
-        CREATE TABLE BScore (
+        CREATE TABLE IF NOT EXISTS BScore (
             Time INT PRIMARY KEY ASC
                     UNIQUE
                     NOT NULL,
@@ -46,9 +43,8 @@ class LocalStorage():
         )
         WITHOUT ROWID;
         """)
-        c = self.conn.cursor()
         c.execute("""
-        CREATE TABLE Rank (
+        CREATE TABLE IF NOT EXISTS Rank (
             Time INT PRIMARY KEY ASC
                     UNIQUE
                     NOT NULL,
@@ -58,9 +54,8 @@ class LocalStorage():
         )
         WITHOUT ROWID;
         """)
-        c = self.conn.cursor()
         c.execute("""
-        CREATE TABLE Percent (
+        CREATE TABLE IF NOT EXISTS Percent (
             Time INT PRIMARY KEY ASC
                     UNIQUE
                     NOT NULL,
@@ -71,112 +66,113 @@ class LocalStorage():
         WITHOUT ROWID;
         """)
         self.conn.commit()
+        
+        self.tables = ['MMR', 'BScore', 'Rank', 'Percent']
     
-        self.tables = {
-            '': 'MMR',
-            'b': 'BScore',
-            'r': 'Rank',
-            'p': 'Percent'
-        }
-
-    def initSettings(self):
-        default = {
-            'default table': 0
-        }
-        try:
-            s = open(f'{self.workDir}/settings.json', 'r+')
-            settings = json.load(s)
-            self.settings = json.load(s)
-            settings['default table']
-            print('Settings has been loaded')
-        except json.decoder.JSONDecodeError:
-            json.dump(default, open(f'{self.workDir}/settings.json', 'w+'))
-            s = open(f'{self.workDir}/settings.json', 'r')
-            self.settings = json.load(s)
-            print('Settings has been restored to default')
-        except FileNotFoundError:
-            json.dump(default, open(f'{self.workDir}/settings.json', 'w+'))
-            s = open(f'{self.workDir}/settings.json', 'r')
-            self.settings = json.load(s)
-            print('Settings has been restored to default')
-        except Exception as e:
-            print(e)
-            exe = False
-            pass
-
-    def changeSettings(self, name: str, value: int):
-        self.settings: dict
-        self.settings[name] = value
-        try:
-            s = open(f'{self.workDir}/settings.json', 'w+')
-            json.dump(self.settings, s)
-        except Exception as e:
-            print(e)
-
-    def write(self, tableCode: str, name: str, data: int):
+    def create(self, name: str):
         c = self.conn.cursor()
-        t = self.tables[tableCode]
-        sqlQ = f'''INSERT INTO "{t}"(Time, Name, {t}) VALUES (?, ?, ?)'''
-        c.execute(sqlQ, [int(time.time()), name, data])
-        self.conn.commit()
-        print('Done')
-
-    def readLast(self, table: str):
-        ###################################################################################
-        c = self.conn.cursor()
-        sqlQ = f'SELECT * FROM "Dota2 {table}" ORDER BY Time DESC LIMIT 4'
-        data = c.execute(sqlQ).fetchall()
         try:
-            return list(map(lambda y: list(filter(lambda x: x is not None, y))[0], zip(*data)))
-        except:
+            c.execute(f"""
+            INSERT INTO Names (Name)
+            VALUES ('{name}');
+            """)
+            self.conn.commit()
+        except Exception as e:
+            return e
+    
+    def write(self, tableName: str, name: str, data: int):
+        c = self.conn.cursor()
+        try:
+            c.execute(f'''INSERT INTO "{t}"(Time, Name, {t}) VALUES (?, ?, ?)''',
+                      [int(time.time()), str(name), int(data)])
+            self.conn.commit()
+        except Exception as e:
+            return e
+    
+    def read(self, name: str) -> dict:
+        try:
+            c = self.conn.cursor()
+            mmr = c.execute(f"""SELECT MMR FROM MMR WHERE Name = '{name}' ORDER BY Time DESC LIMIT 1;""").fetchall()
+            bScore = c.execute(
+                f"""SELECT BScore FROM BScore WHERE Name = '{name}' ORDER BY Time DESC LIMIT 1;""").fetchall()
+            rank = c.execute(f"""SELECT Rank FROM Rank WHERE Name = '{name}' ORDER BY Time DESC LIMIT 1;""").fetchall()
+            percent = c.execute(
+                f"""SELECT Percent FROM Percent WHERE Name = '{name}' ORDER BY Time DESC LIMIT 1;""").fetchall()
+            data = dict(zip(self.tables, list(map(self._read, [mmr, bScore, rank, percent]))))
+            return data
+        except Exception as e:
+            return e
+    
+    def readNames(self) -> list:
+        return ['']
+    
+    def readLast(self) -> str:
+        return 'a'
+    
+    @staticmethod
+    def _read(l: list or tuple) -> object:
+        try:
+            return l[0][0]
+        except IndexError:
             return None
-        ###################################################################################
+
+
+class Core(Data):
+    t = r'(\D)(?:\S|\s+)(\w+)|(/1)(\d+)'
+    exe = True
+    
+    def __init__(cls, *args):
+        super().__init__(*args)
+        cls.last = super().readLast()
+    
+    @classmethod
+    def parse(cls, data: str):
+        try:
+            return re.fullmatch(cls.t, data).groups()
+        except Exception as e:
+            return e
+    
+    @classmethod
+    def execute(cls, command: str, data):
+        try:
+            if command == 'e':
+                cls.exe = False
+                return Exception
+            elif command == 'c':
+                if type(data) != str:
+                    raise AttributeError(data)
+                super().create(data)
+            elif command == 'p':
+                names = super().readNames()
+                print(names)
+            elif command == 'h':
+                help = ''
+                print(help)
+            elif command == '':
+                if type(data) != list or tuple:
+                    raise AttributeError(data)
+                super().write(data)
+            else:
+                print('Command doesn\'n exist')
+                raise AttributeError(command)
+        except Exception as e:
+            print(e)
 
 
 def main(workDir):
-    db = LocalStorage(workDir)
-    tables = {}
-    c = db.settings['Last name']
-    exe = True
+    core = Core(workDir)
     
-    while exe:
-        print(f'Current table: {tables[c]}')
-        last = db.readLast(tables[c])
-        try:
-            print(
-                f'Last record: | Date: {dt.fromtimestamp(last[0])} | MMR: {last[1]} | BScore: {last[2]} | Rank: {last[3]} | Percent: {last[4]} |')
-        except:
-            print('No records')
-        
-        tmp = input('Enter command\data: ')
-        
-        try:
-            t = r'(\D).*|(\d{1,5})|b(\d{1,5})|r(\d{2})|p(\d{1,3})'
-            r = re.fullmatch(t, tmp).groups()
-        except:
-            print('Wrong command\data\n')
-        
-        if r[0] == 'e':
-            exe = False
-            break
-        elif r[0] == 'n':
-            c = (c + 1) % len(tables)
-            print(
-                '------------------------------------------------------------------------------------------------------------------------')
-        elif r[0] == 'd':
-            c = (c + 1) % len(tables)
-            db.changeSettings('default table', c)
-            print(
-                '------------------------------------------------------------------------------------------------------------------------')
-        elif r[0] == '':
-            try:
-                db.write(r[0], )
-                print(
-                    '------------------------------------------------------------------------------------------------------------------------')
+    while core.exe:
+        print(f'Table: {core.last}')
+        print('Last record:', str(core.read(core.last))[1: -1])
+        c = core.parse(input('Enter command and data: '))
+        print(c)
+        # core.execute()
+        # break
 
 
 if __name__ == '__main__':
-    pass
+    main(os.path.dirname(sys.argv[0]))
     # try:
     #     main(os.path.dirname(sys.argv[0]))
     # except Exception as e:

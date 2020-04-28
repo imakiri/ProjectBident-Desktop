@@ -129,9 +129,9 @@ class Data():
             data.extend(c.execute(f"""SELECT Time, Name FROM Percent ORDER BY Time DESC LIMIT 1;""").fetchall())
             data.sort(key=lambda x: x[0], reverse=True)
             if data == []:
-                return self.readNames()
+                return []
             else:
-                return [data[0][1]]
+                return data[0][1]
         except Exception as e:
             raise e
         finally:
@@ -184,17 +184,16 @@ class Core(Data):
     
     def __init__(self, *args):
         super().__init__(*args)
-        self.__class__.currentName = super().readLast()
-        if super().readLast() is None:
+        if super().readNames() == []:
             print(self.h)
-            print(self.__class__.currentName)
+            self.__class__.currentName = [None]
+        elif super().readLast() == []:
+            self.__class__.currentName = super().readNames()
         else:
-            try:
-                self.__class__.currentName[0]
-                self.__class__.currentName.extend(self.readNames().remove(super().readLast()))
-            except:
-                print(self.h)
-                self.__class__.currentName = [None]
+            self.__class__.currentName = [super().readLast()]
+            tmp = self.readNames()
+            tmp.remove(super().readLast())
+            self.__class__.currentName.extend(tmp)
         self.info()
     
     @classmethod
@@ -203,10 +202,13 @@ class Core(Data):
             return re.fullmatch(cls.t, data).groups()
         except Exception as e:
             return e
-    
+
     def info(self):
-        print(f'CURRENT NAME: \'{self.__class__.currentName[0]}\'')
-        print('LAST RECORD:', str(self.read(self.__class__.currentName[0]))[1: -1])
+        try:
+            print(f'CURRENT NAME: \'{self.__class__.currentName[0]}\'')
+            print('LAST RECORD:', str(self.read(self.__class__.currentName[0]))[1: -1])
+        except IndexError:
+            print(f'THERE IS NO NAMES NOR RECORDS')
     
     def execute(self, command: str, data: str = None):
         cls = self.__class__
@@ -231,7 +233,6 @@ class Core(Data):
                 print(f'NAMES: {str(self.readNames())[1: -1]}')
             elif command == cls.commands[3]:
                 self.write(cls.currentName[0], remove=True)
-                print(cls.currentName)
                 self.info()
             elif command == cls.commands[4]:
                 names = super().readNames()
@@ -263,7 +264,6 @@ class Core(Data):
                 self.info()
             else:
                 print('Command doesn\'n exist')
-                # raise AttributeError(command)
         except Exception as e:
             raise e
 
@@ -277,9 +277,8 @@ def main(workDir):
 
 
 if __name__ == '__main__':
-    main(os.path.dirname(sys.argv[0]))
-    # try:
-    #     main(os.path.dirname(sys.argv[0]))
-    # except Exception as e:
-    #     print(e)
-    #     input('Press Enter to exit')
+    try:
+        main(os.path.dirname(sys.argv[0]))
+    except Exception as e:
+        print(e)
+        input('Press Enter to exit')

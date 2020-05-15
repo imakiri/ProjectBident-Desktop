@@ -160,107 +160,89 @@ class Data():
 
 
 class Core(Data):
-    t = r'(\D|)\s?(.*)'
-    exe = True
-    commands = ('e', 'c', 'd', 'r', 'n', 's', 'i', 'h', '', 'b', 'r', 'p')
-    h = '''Commands:
-           h - Help
-           e - Exit
-           c - Create a name
-           d - Delete a name
-           r - Delete the last record for a current name
-           s - Set a current name
-           n - List of names
-           i - Name info
-             - Create an MMR record for a current name
-           b - Create a BScore record for a current name
-           r - Create a Rank record for a current name
-           p - Create a Percent record a for current name
-        Syntax:
-           2400 - Create an MMR record with a value 2400 for a current name
-           c В раю без изменений or cВ раю без изменений - Create a name \'В раю без изменений\'
-           b7800 or b 7800 - Create a BScore record with a value 7800
-           '''
     
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, workDir, parseTemplate, execute, commands, help):
+        super().__init__(workDir)
+        self.parseTemplate = parseTemplate
+        self.exe = execute
+        self.commands = commands
+        self.help = help
+        
         if super().readNames() == []:
-            print(self.h)
-            self.__class__.currentName = [None]
+            print(self.help)
+            self.currentName = [None]
         elif super().readLast() == []:
-            self.__class__.currentName = super().readNames()
+            self.currentName = super().readNames()
         else:
-            self.__class__.currentName = [super().readLast()]
+            self.currentName = [super().readLast()]
             tmp = self.readNames()
             tmp.remove(super().readLast())
-            self.__class__.currentName.extend(tmp)
+            self.currentName.extend(tmp)
         self.info()
     
-    @classmethod
-    def parse(cls, data: str):
+    def parse(self, data: str):
         try:
-            return re.fullmatch(cls.t, data).groups()
+            return re.fullmatch(self.parseTemplate, data).groups()
         except Exception as e:
             return e
 
     def info(self):
         try:
-            print(f'CURRENT NAME: \'{self.__class__.currentName[0]}\'')
-            print('LAST RECORD:', str(self.read(self.__class__.currentName[0]))[1: -1])
+            print(f'CURRENT NAME: \'{self.currentName[0]}\'')
+            print('LAST RECORD:', str(self.read(self.currentName[0]))[1: -1])
         except IndexError:
             print(f'THERE IS NO NAMES NOR RECORDS')
     
     def execute(self, command: str, data: str = None):
-        cls = self.__class__
         try:
-            if command == cls.commands[0]:
-                cls.exe = False
-            elif command == cls.commands[1]:
+            if command == self.commands[0]:
+                self.exe = False
+            elif command == self.commands[1]:
                 super().create(data)
                 try:
-                    cls.currentName.insert(0, super().readNames(data))
+                    self.currentName.insert(0, super().readNames(data))
                 except:
                     pass
                 names = super().readNames()
                 print(f'NAMES: {str(self.readNames())[1: -1]}')
-                print(f'CURRENT NAME: {cls.currentName[0]}')
-                last = str(super().read(cls.currentName[0]))
+                print(f'CURRENT NAME: {self.currentName[0]}')
+                last = str(super().read(self.currentName[0]))
                 print('LAST RECORD:', last[1: -1])
-            elif command == cls.commands[2]:
+            elif command == self.commands[2]:
                 super().create(data, remove=True)
-                cls.currentName.pop(0)
+                self.currentName.pop(0)
                 names = super().readNames()
                 print(f'NAMES: {str(self.readNames())[1: -1]}')
-            elif command == cls.commands[3]:
-                self.write(cls.currentName[0], remove=True)
+            elif command == self.commands[3]:
+                self.write(self.currentName[0], remove=True)
                 self.info()
-            elif command == cls.commands[4]:
+            elif command == self.commands[4]:
                 names = super().readNames()
                 print(f'NAMES: {str(self.readNames())[1: -1]}')
-            elif command == cls.commands[5]:
+            elif command == self.commands[5]:
                 try:
-                    cls.currentName[0] = super().readNames(data)
-                    print(f'CURRENT NAME: {cls.currentName[0]}')
-                    last = str(super().read(cls.currentName[0]))
+                    self.currentName[0] = super().readNames(data)
+                    print(f'CURRENT NAME: {self.currentName[0]}')
+                    last = str(super().read(self.currentName[0]))
                     print('LAST RECORD:', last[1: -1])
                 except Exception as e:
                     raise e
                     print(f'Name \'{data}\' doesn\'t exist')
-            elif command == cls.commands[6]:
+            elif command == self.commands[6]:
                 self.info()
-            elif command == cls.commands[7]:
-                print(cls.h)
-            elif command == cls.commands[8]:
-                super().write(name=cls.currentName[0], tableName=self.tables[0], data=data)
+            elif command == self.commands[7]:
+                print(self.help)
+            elif command == self.commands[8]:
+                super().write(name=self.currentName[0], tableName=self.tables[0], data=data)
                 self.info()
-            elif command == cls.commands[9]:
-                super().write(name=cls.currentName[0], tableName=self.tables[1], data=data)
+            elif command == self.commands[9]:
+                super().write(name=self.currentName[0], tableName=self.tables[1], data=data)
                 self.info()
-            elif command == cls.commands[10]:
-                super().write(name=cls.currentName[0], tableName=self.tables[2], data=data)
+            elif command == self.commands[10]:
+                super().write(name=self.currentName[0], tableName=self.tables[2], data=data)
                 self.info()
-            elif command == cls.commands[11]:
-                super().write(name=cls.currentName[0], tableName=self.tables[3], data=data)
+            elif command == self.commands[11]:
+                super().write(name=self.currentName[0], tableName=self.tables[3], data=data)
                 self.info()
             else:
                 print('Command doesn\'n exist')
@@ -269,8 +251,31 @@ class Core(Data):
 
 
 def main(workDir):
-    core = Core(workDir)
-
+    t = r'(\D|)\s?(.*)'
+    exe = True
+    commands = ('e', 'c', 'd', 'l', 'n', 's', 'i', 'h', '', 'b', 'r', 'p')
+    h = '''
+            Commands:
+               h - Help
+               e - Exit
+               c - Create a name
+               d - Delete a name
+               l - Delete the last record for a current name
+               s - Set a current name
+               n - List of names
+               i - Name info
+                 - Create an MMR record for a current name
+               b - Create a BScore record for a current name
+               r - Create a Rank record for a current name
+               p - Create a Percent record a for current name
+            Syntax:
+               2400 - Create an MMR record with a value 2400 for a current name
+               c В раю без изменений or cВ раю без изменений - Create a name \'В раю без изменений\'
+               b7800 or b 7800 - Create a BScore record with a value 7800
+               '''
+    
+    core = Core(workDir=workDir, parseTemplate=t, execute=exe, commands=commands, help=h)
+    
     while core.exe:
         cd = core.parse(input('\nEnter command and data: '))
         core.execute(cd[0], cd[1])

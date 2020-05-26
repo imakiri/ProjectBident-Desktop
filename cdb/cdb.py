@@ -47,7 +47,7 @@ class Data():
         CREATE TABLE IF NOT EXISTS Percent (
             Time INT PRIMARY KEY ASC UNIQUE NOT NULL,
             Name CHAR REFERENCES Names (Name) MATCH [FULL] NOT NULL,
-            Percent INT NOT NULL)
+            Percent INT)
         WITHOUT ROWID;
         """)
         self.conn.commit()
@@ -85,7 +85,11 @@ class Data():
                 if input(f'Last record for \"{name}\" in {last[0]} will be erased. Do you want to continue? y/n ') == 'y':
                     c.execute(f"""DELETE FROM {last[0]} WHERE Time={last[1]};""")
             else:
-                c.execute(f"""INSERT INTO "{tableName}" (Time, Name, {tableName}) VALUES (?, ?, ?)""", (int(time.time()), str(name), int(data)))
+                if data == '':
+        
+                    c.execute(f"""INSERT INTO "{tableName}" (Time, Name, {tableName}) VALUES (?, ?, ?)""", (int(time.time()), str(name), None))
+                else:
+                    c.execute(f"""INSERT INTO "{tableName}" (Time, Name, {tableName}) VALUES (?, ?, ?)""", (int(time.time()), str(name), int(data)))
             self.conn.commit()
         except Exception as e:
             raise e
@@ -272,6 +276,7 @@ def main(workDir):
                2400 - Create an MMR record with a value 2400 for a current name
                c В раю без изменений or cВ раю без изменений - Create a name \'В раю без изменений\'
                b7800 or b 7800 - Create a BScore record with a value 7800
+               p - Create a Percent record with a NULL value
                '''
     
     core = Core(workDir=workDir, parseTemplate=t, execute=exe, commands=commands, help=h)
